@@ -1,0 +1,804 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* PUBG Esports Dark Theme - Professional Gaming Aesthetic */
+:root {
+  /* Deep black base with warm golden accent - PUBG signature colors */
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.1 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+
+  /* PUBG Gold as primary */
+  --primary: oklch(0.8 0.15 85);
+  --primary-foreground: oklch(0.1 0 0);
+
+  /* Dark secondary */
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.9 0 0);
+
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+
+  /* Accent - Cyan/Teal for highlights */
+  --accent: oklch(0.7 0.15 195);
+  --accent-foreground: oklch(0.1 0 0);
+
+  /* Status colors */
+  --destructive: oklch(0.6 0.25 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.65 0.2 145);
+  --success-foreground: oklch(0.1 0 0);
+  --warning: oklch(0.75 0.18 70);
+  --warning-foreground: oklch(0.1 0 0);
+
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.8 0.15 85);
+
+  /* Chart colors for stats */
+  --chart-1: oklch(0.8 0.15 85);
+  --chart-2: oklch(0.7 0.15 195);
+  --chart-3: oklch(0.65 0.2 145);
+  --chart-4: oklch(0.6 0.25 25);
+  --chart-5: oklch(0.75 0.18 300);
+
+  --radius: 0.5rem;
+
+  /* Sidebar */
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.8 0.15 85);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.8 0.15 85);
+
+  /* Custom PUBG Colors */
+  --gold: oklch(0.8 0.15 85);
+  --gold-dim: oklch(0.6 0.12 85);
+  --alive: oklch(0.65 0.2 145);
+  --knocked: oklch(0.75 0.18 70);
+  --eliminated: oklch(0.5 0.2 25);
+  --zone: oklch(0.55 0.2 280);
+
+  /* Added new colors for epic effects */
+  --epic-red: oklch(0.65 0.3 25);
+  --epic-orange: oklch(0.75 0.25 55);
+  --epic-cyan: oklch(0.75 0.2 195);
+  --epic-purple: oklch(0.6 0.25 300);
+  --streak-gold: oklch(0.85 0.2 85);
+}
+
+/* ... existing theme inline ... */
+@theme inline {
+  --font-sans: "Inter", "Geist", "Geist Fallback", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Custom colors */
+  --color-gold: var(--gold);
+  --color-gold-dim: var(--gold-dim);
+  --color-alive: var(--alive);
+  --color-knocked: var(--knocked);
+  --color-eliminated: var(--eliminated);
+  --color-zone: var(--zone);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-epic-red: var(--epic-red);
+  --color-epic-orange: var(--epic-orange);
+  --color-epic-cyan: var(--epic-cyan);
+  --color-epic-purple: var(--epic-purple);
+  --color-streak-gold: var(--streak-gold);
+
+  /* Animation durations */
+  --animation-duration-100: 100ms;
+  --animation-duration-200: 200ms;
+  --animation-duration-300: 300ms;
+  --animation-duration-500: 500ms;
+  --animation-duration-1000: 1s;
+  --animation-duration-2000: 2s;
+  --animation-duration-3000: 3s;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Existing animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px var(--gold), 0 0 10px var(--gold);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--gold), 0 0 30px var(--gold);
+  }
+}
+
+@keyframes kill-flash {
+  0% {
+    background-color: rgba(255, 50, 50, 0.5);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Added epic new animations for advanced features */
+
+/* Epic elimination explosion */
+@keyframes explosion {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes shockwave {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+    border-width: 8px;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Kill streak animations */
+@keyframes streakSlam {
+  0% {
+    transform: scale(3) translateY(-100px);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.2) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes streakGlow {
+  0%,
+  100% {
+    text-shadow: 0 0 20px var(--streak-gold), 0 0 40px var(--streak-gold), 0 0 60px var(--streak-gold);
+    filter: brightness(1);
+  }
+  50% {
+    text-shadow: 0 0 40px var(--streak-gold), 0 0 80px var(--streak-gold), 0 0 120px var(--streak-gold);
+    filter: brightness(1.3);
+  }
+}
+
+@keyframes fireParticle {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Team wipe celebration */
+@keyframes wipeSlash {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes wipePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes bloodSplatter {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* Clutch moment */
+@keyframes clutchHeartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.1);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+@keyframes clutchVignette {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Zone phase */
+@keyframes zoneWarning {
+  0%,
+  100% {
+    background-color: rgba(138, 43, 226, 0.1);
+  }
+  50% {
+    background-color: rgba(138, 43, 226, 0.3);
+  }
+}
+
+@keyframes zonePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* MVP reveal cinematic */
+@keyframes mvpSpotlight {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes mvpParticles {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes mvpGoldRain {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+  }
+}
+
+@keyframes mvpNameReveal {
+  0% {
+    letter-spacing: 20px;
+    opacity: 0;
+    filter: blur(10px);
+  }
+  100% {
+    letter-spacing: 4px;
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* Player card popup */
+@keyframes cardFlipIn {
+  0% {
+    transform: perspective(1000px) rotateY(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0);
+    opacity: 1;
+  }
+}
+
+/* WWCD celebration */
+@keyframes wwcdBurst {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes wwcdFireworks {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-300px);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+  }
+}
+
+/* Hot drop alert */
+@keyframes hotDropFlame {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.2);
+  }
+}
+
+@keyframes hotDropPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(255, 100, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 60px rgba(255, 100, 0, 0.9);
+  }
+}
+
+/* Final circle intensity */
+@keyframes finalCirclePulse {
+  0%,
+  100% {
+    border-color: rgba(138, 43, 226, 0.8);
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.5) inset;
+  }
+  50% {
+    border-color: rgba(255, 50, 50, 0.8);
+    box-shadow: 0 0 60px rgba(255, 50, 50, 0.7) inset;
+  }
+}
+
+/* Airdrop notification */
+@keyframes airdropDrop {
+  0% {
+    transform: translateY(-200%) scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(10%) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes parachute {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Glitch effect for eliminations */
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+@keyframes glitchColor {
+  0% {
+    text-shadow: 2px 0 red, -2px 0 cyan;
+  }
+  25% {
+    text-shadow: -2px 0 red, 2px 0 cyan;
+  }
+  50% {
+    text-shadow: 2px 0 red, -2px 0 cyan;
+  }
+  75% {
+    text-shadow: -2px 0 red, 2px 0 cyan;
+  }
+  100% {
+    text-shadow: 2px 0 red, -2px 0 cyan;
+  }
+}
+
+/* Screen shake */
+@keyframes screenShake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-5px, -5px);
+  }
+  20% {
+    transform: translate(5px, -5px);
+  }
+  30% {
+    transform: translate(-5px, 5px);
+  }
+  40% {
+    transform: translate(5px, 5px);
+  }
+  50% {
+    transform: translate(-5px, -5px);
+  }
+  60% {
+    transform: translate(5px, -5px);
+  }
+  70% {
+    transform: translate(-5px, 5px);
+  }
+  80% {
+    transform: translate(5px, 5px);
+  }
+  90% {
+    transform: translate(-5px, -5px);
+  }
+}
+
+/* Existing utility classes */
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease-out forwards;
+}
+.animate-slide-in-up {
+  animation: slideInUp 0.3s ease-out forwards;
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+.animate-kill-flash {
+  animation: kill-flash 0.5s ease-out forwards;
+}
+
+/* New animation utility classes */
+.animate-explosion {
+  animation: explosion 0.6s ease-out forwards;
+}
+.animate-shockwave {
+  animation: shockwave 0.8s ease-out forwards;
+}
+.animate-streak-slam {
+  animation: streakSlam 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+.animate-streak-glow {
+  animation: streakGlow 1s ease-in-out infinite;
+}
+.animate-fire-particle {
+  animation: fireParticle 1s ease-out forwards;
+}
+.animate-wipe-slash {
+  animation: wipeSlash 0.3s ease-out forwards;
+}
+.animate-wipe-pulse {
+  animation: wipePulse 0.5s ease-in-out infinite;
+}
+.animate-blood-splatter {
+  animation: bloodSplatter 0.5s ease-out forwards;
+}
+.animate-clutch-heartbeat {
+  animation: clutchHeartbeat 1s ease-in-out infinite;
+}
+.animate-clutch-vignette {
+  animation: clutchVignette 2s ease-in-out infinite;
+}
+.animate-zone-warning {
+  animation: zoneWarning 1s ease-in-out infinite;
+}
+.animate-zone-pulse {
+  animation: zonePulse 1.5s ease-in-out infinite;
+}
+.animate-mvp-spotlight {
+  animation: mvpSpotlight 1s ease-out forwards;
+}
+.animate-mvp-particles {
+  animation: mvpParticles 2s ease-out infinite;
+}
+.animate-mvp-gold-rain {
+  animation: mvpGoldRain 3s linear infinite;
+}
+.animate-mvp-name-reveal {
+  animation: mvpNameReveal 1s ease-out forwards;
+}
+.animate-card-flip-in {
+  animation: cardFlipIn 0.5s ease-out forwards;
+}
+.animate-wwcd-burst {
+  animation: wwcdBurst 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+.animate-wwcd-fireworks {
+  animation: wwcdFireworks 1.5s ease-out forwards;
+}
+.animate-confetti-fall {
+  animation: confettiFall 4s linear infinite;
+}
+.animate-hot-drop-flame {
+  animation: hotDropFlame 0.3s ease-in-out infinite;
+}
+.animate-hot-drop-pulse {
+  animation: hotDropPulse 0.5s ease-in-out infinite;
+}
+.animate-final-circle-pulse {
+  animation: finalCirclePulse 2s ease-in-out infinite;
+}
+.animate-airdrop-drop {
+  animation: airdropDrop 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+.animate-parachute {
+  animation: parachute 1s ease-in-out infinite;
+}
+.animate-glitch {
+  animation: glitch 0.3s ease-in-out;
+}
+.animate-glitch-color {
+  animation: glitchColor 0.3s ease-in-out;
+}
+.animate-screen-shake {
+  animation: screenShake 0.5s ease-in-out;
+}
+
+/* Scrolling animation for lower third ticker */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+/* Scoreboard row animations */
+@keyframes scoreReveal {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-score-reveal {
+  animation: scoreReveal 0.4s ease-out forwards;
+}
+
+/* Status indicator pulse */
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.animate-status-pulse {
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+/* OBS Browser Source optimizations */
+.obs-overlay {
+  background: transparent !important;
+  overflow: hidden;
+}
+
+/* Gradient overlays */
+.gradient-gold {
+  background: linear-gradient(135deg, oklch(0.8 0.15 85) 0%, oklch(0.65 0.12 75) 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(180deg, oklch(0.12 0 0) 0%, oklch(0.08 0 0) 100%);
+}
+
+/* New gradient and effect classes */
+.gradient-epic-red {
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+}
+
+.gradient-epic-gold {
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 50%, #ffd700 100%);
+}
+
+.gradient-streak {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.3) 50%, transparent 100%);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 10px var(--gold), 0 0 20px var(--gold), 0 0 30px var(--gold);
+}
+
+.text-glow-red {
+  text-shadow: 0 0 10px #ff4444, 0 0 20px #ff4444, 0 0 30px #ff4444;
+}
+
+.box-glow-gold {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);
+}
+
+.box-glow-red {
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.5), 0 0 40px rgba(255, 68, 68, 0.3);
+}
+
+/* Particle container */
+.particle-container {
+  position: absolute;
+  pointer-events: none;
+  overflow: visible;
+}
