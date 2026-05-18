@@ -273,7 +273,7 @@ These sync in real-time to OBS browser sources.
 | 5th | 3 |
 | 6th | 2 |
 | 7th | 1 |
-| 8th | 0 |
+| 8th | 1 |
 | 9th-16th | 0 |
 
 ### Kill Points
