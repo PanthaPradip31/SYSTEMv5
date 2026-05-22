@@ -4,16 +4,16 @@ import { useEffect, useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { useRealtimeSync, getRealtimeSync, type SyncEventType } from "@/lib/realtime"
 import type { KillFeedEvent } from "@/lib/types"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface Particle {
   id: number
   x: number
   y: number
-  angle: number
-  speed: number
+  vx: number
+  vy: number
   size: number
   color: string
-  delay: number
 }
 
 interface EpicEliminationProps {
@@ -23,25 +23,24 @@ interface EpicEliminationProps {
 export function EpicElimination({ className }: EpicEliminationProps) {
   const [event, setEvent] = useState<KillFeedEvent | null>(null)
   const [particles, setParticles] = useState<Particle[]>([])
-  const [showShockwave, setShowShockwave] = useState(false)
-  const [showGlitch, setShowGlitch] = useState(false)
 
   useRealtimeSync()
 
   const generateParticles = useCallback(() => {
     const newParticles: Particle[] = []
-    const colors = ["#ff4444", "#ff8800", "#ffcc00", "#ffffff"]
+    const colors = ["#ff3333", "#ff7700", "#ffcc00", "#ffffff"]
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 40; i++) {
+      const angle = Math.random() * Math.PI * 2
+      const speed = 3 + Math.random() * 8
       newParticles.push({
         id: i,
-        x: 50 + (Math.random() - 0.5) * 20,
-        y: 50 + (Math.random() - 0.5) * 20,
-        angle: Math.random() * 360,
-        speed: 2 + Math.random() * 4,
-        size: 4 + Math.random() * 8,
+        x: 50,
+        y: 50,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 6,
         color: colors[Math.floor(Math.random() * colors.length)],
-        delay: Math.random() * 0.2,
       })
     }
     return newParticles
@@ -56,114 +55,201 @@ export function EpicElimination({ className }: EpicEliminationProps) {
       if (!killEvent.isKnock) {
         setEvent(killEvent)
         setParticles(generateParticles())
-        setShowShockwave(true)
-        setShowGlitch(true)
 
-        setTimeout(() => setShowShockwave(false), 800)
-        setTimeout(() => setShowGlitch(false), 300)
         setTimeout(() => {
           setEvent(null)
           setParticles([])
-        }, 2500)
+        }, 3200) // Keep visible for 3.2s
       }
     })
 
     return () => unsub()
   }, [generateParticles])
 
-  if (!event) return null
-
   return (
-    <div
-      className={cn(
-        "fixed inset-0 pointer-events-none flex items-center justify-center z-50",
-        showGlitch && "animate-screen-shake",
-        className,
-      )}
-    >
-      {/* Shockwave effect */}
-      {showShockwave && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-32 h-32 rounded-full border-4 border-red-500 animate-shockwave" />
-          <div
-            className="absolute w-32 h-32 rounded-full border-4 border-orange-500 animate-shockwave"
-            style={{ animationDelay: "0.1s" }}
-          />
-          <div
-            className="absolute w-32 h-32 rounded-full border-4 border-yellow-500 animate-shockwave"
-            style={{ animationDelay: "0.2s" }}
-          />
-        </div>
-      )}
+    <AnimatePresence>
+      {event && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: 1,
+            x: [0, -3, 3, -2, 2, 0],
+            y: [0, 2, -2, 1, -1, 0],
+          }}
+          exit={{ opacity: 0 }}
+          transition={{
+            duration: 0.4,
+            opacity: { duration: 0.2 },
+            x: { type: "tween", duration: 0.15 },
+            y: { type: "tween", duration: 0.15 },
+          }}
+          className={cn(
+            "fixed inset-0 pointer-events-none flex items-center justify-center z-50 overflow-hidden",
+            className,
+          )}
+        >
+          {/* Shockwaves */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {[0, 0.15, 0.3].map((delay, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ scale: 0.1, opacity: 0.9, borderWidth: "12px" }}
+                animate={{
+                  scale: 4,
+                  opacity: 0,
+                  borderWidth: "1px",
+                }}
+                transition={{
+                  duration: 0.9,
+                  ease: "easeOut",
+                  delay: delay,
+                }}
+                className={cn(
+                  "absolute w-44 h-44 rounded-full border-solid",
+                  idx === 0 && "border-red-500",
+                  idx === 1 && "border-orange-500",
+                  idx === 2 && "border-yellow-500",
+                )}
+              />
+            ))}
+          </div>
 
-      {/* Particles */}
-      <div className="particle-container absolute inset-0">
-        {particles.map((particle) => (
-          <div
-            key={particle.id}
-            className="absolute rounded-full animate-fire-particle"
-            style={{
-              left: `${particle.x}%`,
-              top: `${particle.y}%`,
-              width: particle.size,
-              height: particle.size,
-              backgroundColor: particle.color,
-              animationDelay: `${particle.delay}s`,
-              transform: `rotate(${particle.angle}deg) translateY(-${particle.speed * 50}px)`,
-              boxShadow: `0 0 ${particle.size}px ${particle.color}`,
+          {/* Particles Explosion */}
+          <div className="absolute inset-0 pointer-events-none">
+            {particles.map((p) => (
+              <motion.div
+                key={p.id}
+                initial={{
+                  x: "50vw",
+                  y: "50vh",
+                  scale: 1,
+                  opacity: 1,
+                }}
+                animate={{
+                  x: `calc(50vw + ${p.vx * 30}px)`,
+                  y: `calc(50vh + ${p.vy * 30}px)`,
+                  scale: 0.1,
+                  opacity: 0,
+                }}
+                transition={{
+                  duration: 1 + Math.random() * 0.8,
+                  ease: "easeOut",
+                }}
+                className="absolute rounded-full"
+                style={{
+                  width: p.size,
+                  height: p.size,
+                  backgroundColor: p.color,
+                  boxShadow: `0 0 10px ${p.color}`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Main Elimination card deck */}
+          <motion.div
+            initial={{ scale: 2.2, rotateX: 25, y: -200, opacity: 0 }}
+            animate={{ scale: 1, rotateX: 0, y: 0, opacity: 1 }}
+            exit={{ scale: 0.7, y: 150, opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 280,
+              damping: 18,
+              mass: 0.95,
             }}
-          />
-        ))}
-      </div>
+            style={{ perspective: 1000 }}
+            className={cn(
+              "relative bg-gradient-to-r from-red-950/95 via-red-900/95 to-red-950/95",
+              "backdrop-blur-md rounded-2xl px-12 py-8 border-2 border-red-500/80 shadow-[0_0_50px_rgba(239,68,68,0.45)] max-w-lg w-full text-center mx-4",
+            )}
+          >
+            {/* Ambient Red Glow Layer */}
+            <div className="absolute inset-0 bg-red-500/5 animate-pulse rounded-2xl" />
 
-      {/* Main elimination card */}
-      <div
-        className={cn(
-          "relative bg-gradient-to-r from-red-900/90 via-red-800/90 to-red-900/90",
-          "backdrop-blur-sm rounded-lg px-8 py-6 animate-streak-slam",
-          "border-2 border-red-500 box-glow-red",
-        )}
-      >
-        {/* Glitch overlay */}
-        {showGlitch && <div className="absolute inset-0 bg-red-500/20 animate-glitch" />}
+            {/* Corner Esports Accents */}
+            <div className="absolute top-0 left-0 w-5 h-5 border-t-3 border-l-3 border-gold rounded-tl-lg" />
+            <div className="absolute top-0 right-0 w-5 h-5 border-t-3 border-r-3 border-gold rounded-tr-lg" />
+            <div className="absolute bottom-0 left-0 w-5 h-5 border-b-3 border-l-3 border-gold rounded-bl-lg" />
+            <div className="absolute bottom-0 right-0 w-5 h-5 border-b-3 border-r-3 border-gold rounded-br-lg" />
 
-        <div className="relative z-10 text-center">
-          <div className="text-sm font-bold text-red-300 uppercase tracking-widest mb-1">Eliminated</div>
+            <div className="relative z-10 space-y-4">
+              {/* Header Title */}
+              <motion.div
+                initial={{ letterSpacing: "12px", opacity: 0 }}
+                animate={{ letterSpacing: "5px", opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="text-xs font-black text-red-400 uppercase tracking-[0.4em]"
+              >
+                EPIC ELIMINATION
+              </motion.div>
 
-          <div className="flex items-center gap-4 justify-center">
-            {/* Killer */}
-            <div className="text-right">
-              <div className="text-gold font-black text-2xl animate-glitch-color">{event.killerName}</div>
-              <div className="text-xs text-gold/70 uppercase">{event.killerTeam}</div>
+              {/* Killer and Victim Columns */}
+              <div className="flex items-center justify-between gap-4 mt-2">
+
+                {/* Killer (Left) */}
+                <motion.div
+                  initial={{ x: -60, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 180, delay: 0.4 }}
+                  className="text-left w-[42%] truncate"
+                >
+                  <div className="text-gold font-black text-2xl truncate text-glow-gold tracking-wide select-none">
+                    {event.killerName}
+                  </div>
+                  <div className="text-[10px] text-gold/70 uppercase font-extrabold tracking-widest mt-0.5 truncate">
+                    {event.killerTeam}
+                  </div>
+                </motion.div>
+
+                {/* Center Skull Icon & Flame Burst */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 240,
+                    damping: 14,
+                    delay: 0.2,
+                  }}
+                  className="relative shrink-0"
+                >
+                  <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-25" />
+                  <div className="relative z-10 w-16 h-16 rounded-full bg-red-500/15 border-2 border-red-500/40 flex items-center justify-center shadow-lg">
+                    <svg className="w-9 h-9 text-red-500 filter drop-shadow-[0_0_6px_rgba(239,68,68,0.6)]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm4 0c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm-2 5.5c2.21 0 4-1.79 4-4h-8c0 2.21 1.79 4 4 4z" />
+                    </svg>
+                  </div>
+                </motion.div>
+
+                {/* Victim (Right) */}
+                <motion.div
+                  initial={{ x: 60, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 180, delay: 0.4 }}
+                  className="text-right w-[42%] truncate"
+                >
+                  <div className="text-white/50 font-black text-2xl truncate line-through tracking-wide select-none opacity-60">
+                    {event.victimName}
+                  </div>
+                  <div className="text-[10px] text-white/30 uppercase font-extrabold tracking-widest mt-0.5 truncate">
+                    {event.victimTeam}
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Weapon */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 150, delay: 0.6 }}
+                className="text-sm text-red-300/80 border-t border-white/5 pt-4"
+              >
+                WEAPON DETECTED: <span className="font-extrabold text-white uppercase tracking-wider">{event.weapon}</span>
+              </motion.div>
             </div>
-
-            {/* Skull icon with explosion */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-500 rounded-full animate-explosion opacity-50" />
-              <svg className="w-12 h-12 text-red-500 relative z-10" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm4 0c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm-2 5.5c2.21 0 4-1.79 4-4h-8c0 2.21 1.79 4 4 4z" />
-              </svg>
-            </div>
-
-            {/* Victim */}
-            <div className="text-left">
-              <div className="text-white/50 font-black text-2xl line-through">{event.victimName}</div>
-              <div className="text-xs text-white/30 uppercase">{event.victimTeam}</div>
-            </div>
-          </div>
-
-          {/* Weapon */}
-          <div className="mt-2 text-sm text-red-300/80">
-            with <span className="font-bold text-white">{event.weapon}</span>
-          </div>
-        </div>
-
-        {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-gold" />
-        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-gold" />
-        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-gold" />
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-gold" />
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

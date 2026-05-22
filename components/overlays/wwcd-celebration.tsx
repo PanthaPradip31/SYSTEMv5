@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useRealtimeSync, getRealtimeSync, type SyncEventType } from "@/lib/realtime"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface WWCDData {
   teamId: string
@@ -20,8 +21,6 @@ interface WWCDCelebrationOverlayProps {
 
 export function WWCDCelebrationOverlay({ className }: WWCDCelebrationOverlayProps) {
   const [wwcd, setWwcd] = useState<WWCDData | null>(null)
-  const [fireworks, setFireworks] = useState<number[]>([])
-  const [confetti, setConfetti] = useState<number[]>([])
 
   useRealtimeSync()
 
@@ -31,149 +30,281 @@ export function WWCDCelebrationOverlay({ className }: WWCDCelebrationOverlayProp
 
     const unsub = sync.subscribe("WWCD_TRIGGER" as SyncEventType, (payload) => {
       setWwcd(payload as WWCDData)
-      setFireworks(Array.from({ length: 20 }, (_, i) => i))
-      setConfetti(Array.from({ length: 100 }, (_, i) => i))
 
       setTimeout(() => {
         setWwcd(null)
-        setFireworks([])
-        setConfetti([])
-      }, 45000)
+      }, 30000) // Keep visible for 30s
     })
 
     return () => unsub()
   }, [])
 
-  if (!wwcd) return null
-
   return (
-    <div className={cn("fixed inset-0 pointer-events-none z-50 overflow-hidden", "bg-black/80", className)}>
-      {/* Fireworks */}
-      {fireworks.map((i) => (
-        <div
-          key={`fw-${i}`}
-          className="absolute animate-wwcd-fireworks"
-          style={{
-            left: `${10 + Math.random() * 80}%`,
-            bottom: 0,
-            animationDelay: `${Math.random() * 2}s`,
-          }}
+    <AnimatePresence>
+      {wwcd && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          className={cn("fixed inset-0 pointer-events-none z-50 overflow-hidden bg-black/85 flex items-center justify-center", className)}
         >
-          <div
-            className="w-4 h-4 rounded-full"
-            style={{
-              background: ["#ffd700", "#ff4444", "#00ff88", "#00ccff", "#ff8800", "#ff00ff"][
-                Math.floor(Math.random() * 6)
-              ],
-              boxShadow: `0 0 20px currentColor`,
-            }}
-          />
-        </div>
-      ))}
-
-      {/* Confetti rain */}
-      {confetti.map((i) => (
-        <div
-          key={`cf-${i}`}
-          className="absolute animate-confetti-fall"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: -20,
-            width: 10 + Math.random() * 10,
-            height: 10 + Math.random() * 10,
-            background: ["#ffd700", "#ff4444", "#00ff88", "#00ccff", "#ff8800", "#ff00ff", "#ffffff"][
-              Math.floor(Math.random() * 7)
-            ],
-            borderRadius: Math.random() > 0.5 ? "50%" : "0",
-            animationDelay: `${Math.random() * 5}s`,
-            animationDuration: `${4 + Math.random() * 3}s`,
-          }}
-        />
-      ))}
-
-      {/* Main celebration card */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative animate-wwcd-burst">
-          {/* Golden rays */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div
+          {/* Golden Rays Rotator */}
+          <motion.div
+            initial={{ scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1.1, opacity: 0.6 }}
+            exit={{ scale: 1.5, opacity: 0 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="absolute flex items-center justify-center inset-0"
+          >
+            {Array.from({ length: 18 }).map((_, i) => (
+              <motion.div
                 key={i}
-                className="absolute w-2 h-96 bg-linear-to-t from-gold/50 to-transparent"
+                animate={{ rotate: 360 }}
+                transition={{
+                  repeat: Number.POSITIVE_INFINITY,
+                  duration: 40 + i * 2,
+                  ease: "linear",
+                }}
+                className="absolute w-2 h-[800px] bg-gradient-to-t from-gold/45 via-gold/10 to-transparent"
                 style={{
-                  transform: `rotate(${i * 30}deg)`,
-                  transformOrigin: "center bottom",
+                  transform: `rotate(${i * 20}deg)`,
+                  transformOrigin: "center center",
                 }}
               />
             ))}
-          </div>
+          </motion.div>
 
-          {/* Main card */}
-          <div className="relative bg-linear-to-b from-gold via-yellow-600 to-gold p-1 rounded-3xl">
-            <div className="bg-black/95 rounded-3xl px-16 py-12">
-              {/* Chicken icon */}
-              <div className="text-center mb-4">
-                <div className="inline-block p-4 bg-gold/20 rounded-full">
-                  <svg className="w-20 h-20 text-gold" viewBox="0 0 24 24" fill="currentColor">
+          {/* Fireworks Particles */}
+          {Array.from({ length: 12 }).map((_, idx) => (
+            <motion.div
+              key={`fw-${idx}`}
+              initial={{ scale: 0, opacity: 0, x: 0, y: 0 }}
+              animate={{
+                scale: [0, 1.2, 1],
+                opacity: [0, 1, 1, 0],
+                x: (Math.random() - 0.5) * 800,
+                y: -(200 + Math.random() * 400),
+              }}
+              transition={{
+                duration: 2.5 + Math.random() * 2,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatDelay: Math.random() * 3,
+                ease: "easeOut",
+              }}
+              className="absolute bottom-0"
+              style={{
+                left: `${15 + idx * 6}%`,
+              }}
+            >
+              <div
+                className="w-4 h-4 rounded-full filter blur-[1px]"
+                style={{
+                  background: ["#ffd700", "#ff4444", "#00ff88", "#00ccff", "#ff8800", "#ff00ff"][idx % 6],
+                  boxShadow: `0 0 35px 8px currentColor`,
+                }}
+              />
+            </motion.div>
+          ))}
+
+          {/* Confetti Rain */}
+          {Array.from({ length: 60 }).map((_, idx) => {
+            const size = 6 + Math.random() * 10
+            return (
+              <motion.div
+                key={`cf-${idx}`}
+                initial={{
+                  y: -100,
+                  x: `${Math.random() * 100}vw`,
+                  rotate: 0,
+                  opacity: 0,
+                }}
+                animate={{
+                  y: "110vh",
+                  rotate: 360 + Math.random() * 720,
+                  opacity: [0, 1, 1, 0],
+                }}
+                transition={{
+                  duration: 5 + Math.random() * 5,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "linear",
+                  delay: Math.random() * 6,
+                }}
+                className="absolute"
+                style={{
+                  width: size,
+                  height: size,
+                  background: ["#ffd700", "#ff4444", "#00ff88", "#00ccff", "#ff8800", "#ff00ff", "#ffffff"][idx % 7],
+                  borderRadius: idx % 3 === 0 ? "50%" : idx % 3 === 1 ? "4px" : "0px",
+                  boxShadow: `0 0 10px rgba(255, 215, 0, 0.2)`,
+                }}
+              />
+            )
+          })}
+
+          {/* Main Celebration Card Deck */}
+          <motion.div
+            initial={{ scale: 0.75, y: 150, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.8, y: -100, opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 120,
+              damping: 18,
+              mass: 1.1,
+            }}
+            className="relative bg-gradient-to-b from-gold via-yellow-600 to-gold p-1 rounded-[2.5rem] shadow-[0_0_80px_rgba(218,165,32,0.4)] z-10 max-w-3xl w-full mx-4"
+          >
+            <div className="bg-neutral-950/98 rounded-[2.4rem] px-12 py-10 border border-black relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(218,165,32,0.06)_0%,transparent_70%)]" />
+
+              {/* Decorative Esports Corners */}
+              <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-gold rounded-tl-3xl" />
+              <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-gold rounded-tr-3xl" />
+              <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-gold rounded-bl-3xl" />
+              <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-gold rounded-br-3xl" />
+
+              {/* WWCD Header Logo */}
+              <motion.div
+                initial={{ scale: 0.2, rotate: -45, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 150,
+                  damping: 15,
+                  delay: 0.3,
+                }}
+                className="text-center mb-5"
+              >
+                <div className="inline-block p-4 bg-gold/15 rounded-full border border-gold/30 box-glow-gold">
+                  <svg className="w-16 h-16 text-gold drop-shadow-[0_0_8px_rgba(255,215,0,0.5)]" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8.5 5A1.5 1.5 0 0 0 7 6.5v.634a.75.75 0 0 1-.45.687l-.33.144a.75.75 0 0 1-.58.014L4.5 7.5a2.5 2.5 0 0 0-.354 4.979l.904.15a.75.75 0 0 1 .54.427L6 14h-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1.793l.853.854a.5.5 0 0 0 .708 0L9.5 16h5l1.146 1.146a.5.5 0 0 0 .708 0l.853-.854H19a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-.5l.41-.944a.75.75 0 0 1 .54-.427l.904-.15A2.5 2.5 0 0 0 19.5 7.5l-1.14.479a.75.75 0 0 1-.58-.014l-.33-.144A.75.75 0 0 1 17 7.134V6.5A1.5 1.5 0 0 0 15.5 5h-7z" />
                   </svg>
                 </div>
-              </div>
+              </motion.div>
 
-              {/* WWCD Text */}
-              <div className="text-center mb-8">
-                <div className="text-gold text-lg font-bold uppercase tracking-[0.5em] mb-2">Winner Winner</div>
-                <div className="text-7xl font-black text-gold text-glow-gold animate-streak-glow">CHICKEN DINNER</div>
-              </div>
-
-              {/* Team info */}
-              <div className="flex items-center justify-center gap-8">
-                <div
-                  className="w-32 h-32 rounded-full bg-white/10 border-4 overflow-hidden flex items-center justify-center"
-                  style={{ borderColor: wwcd.teamColor }}
+              {/* WWCD Large Text Banner */}
+              <div className="text-center mb-6">
+                <motion.div
+                  initial={{ y: -30, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.5 }}
+                  className="text-gold text-sm font-black uppercase tracking-[0.6em] mb-1"
                 >
-                  <img
-                    src={wwcd.teamLogo || "/placeholder.svg?height=100&width=100"}
-                    alt={wwcd.teamName}
-                    className="w-28 h-28 object-contain"
-                  />
+                  Winner Winner
+                </motion.div>
+                <div className="overflow-hidden flex justify-center py-2">
+                  <motion.h2
+                    initial={{ letterSpacing: "15px", filter: "blur(6px)", opacity: 0 }}
+                    animate={{ letterSpacing: "4px", filter: "blur(0px)", opacity: 1 }}
+                    transition={{ duration: 1.2, ease: "easeOut", delay: 0.6 }}
+                    className="text-5xl md:text-6xl font-black text-gold text-glow-gold uppercase animate-streak-glow select-none"
+                  >
+                    CHICKEN DINNER
+                  </motion.h2>
                 </div>
+              </div>
 
-                <div className="text-center">
-                  <div className="text-5xl font-black mb-2" style={{ color: wwcd.teamColor }}>
-                    {wwcd.teamName}
+              {/* Team Info Container */}
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8 border-t border-white/10 pt-8 mt-6">
+                
+                {/* Team Logo Badge */}
+                <motion.div
+                  initial={{ rotate: -90, scale: 0, opacity: 0 }}
+                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 140,
+                    damping: 16,
+                    delay: 0.8,
+                  }}
+                  className="relative shrink-0"
+                >
+                  <div
+                    className="w-32 h-32 rounded-full bg-black/80 border-4 overflow-hidden flex items-center justify-center shadow-[0_0_35px_rgba(255,255,255,0.05)]"
+                    style={{ borderColor: wwcd.teamColor || '#ffd700' }}
+                  >
+                    <img
+                      src={wwcd.teamLogo || "/placeholder.svg?height=100&width=100"}
+                      alt={wwcd.teamName}
+                      className="w-24 h-24 object-contain"
+                    />
                   </div>
-                  <div className="flex items-center justify-center gap-8 text-white">
-                    <div className="text-center">
-                      <div className="text-4xl font-black text-gold">{wwcd.totalKills}</div>
-                      <div className="text-sm text-gold/70 uppercase">Kills</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-4xl font-black text-gold">{wwcd.totalPoints}</div>
-                      <div className="text-sm text-gold/70 uppercase">Points</div>
-                    </div>
-                  </div>
+                </motion.div>
+
+                {/* Team Stats */}
+                <div className="text-center md:text-left space-y-4">
+                  <motion.div
+                    initial={{ x: -40, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 180, delay: 0.9 }}
+                  >
+                    <h3 className="text-4xl font-black tracking-wide" style={{ color: wwcd.teamColor || '#ffd700' }}>
+                      {wwcd.teamName}
+                    </h3>
+                    <p className="text-xs uppercase font-extrabold tracking-widest text-muted-foreground mt-0.5">
+                      CHAMPION SQUAD ({wwcd.teamShortName})
+                    </p>
+                  </motion.div>
+
+                  {/* Staggered Stats Tiles */}
+                  <motion.div
+                    initial="hidden"
+                    animate="show"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      show: {
+                        opacity: 1,
+                        transition: {
+                          staggerChildren: 0.15,
+                          delayChildren: 1.1,
+                        },
+                      },
+                    }}
+                    className="flex items-center gap-6 text-white"
+                  >
+                    <motion.div
+                      variants={{
+                        hidden: { scale: 0.7, opacity: 0 },
+                        show: { scale: 1, opacity: 1 },
+                      }}
+                      transition={{ type: "spring", stiffness: 150 }}
+                      className="bg-black/55 border border-gold/15 px-6 py-2.5 rounded-2xl text-center min-w-28 shadow-lg shadow-black/30"
+                    >
+                      <div className="text-3xl font-black text-gold text-glow-gold">#1</div>
+                      <div className="text-[9px] text-muted-foreground uppercase font-black tracking-widest mt-0.5">PLACEMENT</div>
+                    </motion.div>
+
+                    <motion.div
+                      variants={{
+                        hidden: { scale: 0.7, opacity: 0 },
+                        show: { scale: 1, opacity: 1 },
+                      }}
+                      transition={{ type: "spring", stiffness: 150 }}
+                      className="bg-black/55 border border-gold/15 px-6 py-2.5 rounded-2xl text-center min-w-28 shadow-lg shadow-black/30"
+                    >
+                      <div className="text-3xl font-black text-gold text-glow-gold">{wwcd.totalKills}</div>
+                      <div className="text-[9px] text-muted-foreground uppercase font-black tracking-widest mt-0.5">SQUAD KILLS</div>
+                    </motion.div>
+
+                    <motion.div
+                      variants={{
+                        hidden: { scale: 0.7, opacity: 0 },
+                        show: { scale: 1, opacity: 1 },
+                      }}
+                      transition={{ type: "spring", stiffness: 150 }}
+                      className="bg-black/55 border border-gold/15 px-6 py-2.5 rounded-2xl text-center min-w-28 shadow-lg shadow-black/30"
+                    >
+                      <div className="text-3xl font-black text-gold text-glow-gold">{wwcd.totalPoints}</div>
+                      <div className="text-[9px] text-muted-foreground uppercase font-black tracking-widest mt-0.5">TOTAL PTS</div>
+                    </motion.div>
+                  </motion.div>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Corner firework bursts */}
-          <div className="absolute -top-8 -left-8 w-16 h-16 bg-gold rounded-full animate-explosion opacity-50" />
-          <div
-            className="absolute -top-8 -right-8 w-16 h-16 bg-gold rounded-full animate-explosion opacity-50"
-            style={{ animationDelay: "0.2s" }}
-          />
-          <div
-            className="absolute -bottom-8 -left-8 w-16 h-16 bg-gold rounded-full animate-explosion opacity-50"
-            style={{ animationDelay: "0.4s" }}
-          />
-          <div
-            className="absolute -bottom-8 -right-8 w-16 h-16 bg-gold rounded-full animate-explosion opacity-50"
-            style={{ animationDelay: "0.6s" }}
-          />
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

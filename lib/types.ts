@@ -233,12 +233,16 @@ export interface Caster {
   name: string
   role: string
   photo?: string
+  instagram?: string
+  twitter?: string
 }
 
 export interface Sponsor {
   id: string
   name: string
   logoUrl?: string
+  videoUrl?: string
+  mediaType: "image" | "video"
 }
 
 export interface IntroConfig {
