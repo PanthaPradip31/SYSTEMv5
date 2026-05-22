@@ -376,6 +376,14 @@ location.reload()
 2. Update overlay URLs in OBS to production domain
 3. Share admin URL with production crew
 
+### Production Branch Policy
+
+- Only changes merged into your designated production branch may deploy to production.
+- Use deploy previews and branch deploys for all feature work, staging, and QA.
+- Do not use Netlify CLI, MCP, or API to publish production from non-production branches.
+- If your production branch is not named `production`, update `PRODUCTION_DEPLOY_BRANCH` in `.github/workflows/production-deploy-policy.yml`.
+- See `docs/deployment-policy.md` for the process and branch policy.
+
 ### Environment Variables
 
 This project uses Supabase for database-backed features and requires the following environment variables for deployment.

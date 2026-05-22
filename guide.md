@@ -255,11 +255,15 @@ Deploy your live production system to the web using Vercel so your crew can mana
 
 1. Open the [Netlify Dashboard](https://app.netlify.com) and go to your site settings, or open the [Vercel Dashboard](https://vercel.com) if you prefer.
 2. Import your GitHub repository.
-3. In **Environment Variables** / **Site variables**, add the Supabase credentials from your `.env.local` file:
+3. Configure your production branch in the host provider so only that branch deploys to production.
+4. In **Environment Variables** / **Site variables**, add the Supabase credentials from your `.env.local` file:
    * `NEXT_PUBLIC_SUPABASE_URL`
    * `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-4. If you host on Netlify, add the same keys under **Site settings → Build & deploy → Environment**.
-5. Click **Deploy**. Your site will build with Supabase enabled.
+5. If you host on Netlify, add the same keys under **Site settings → Build & deploy → Environment**.
+6. Click **Deploy**. Your site will build with Supabase enabled.
+
+> Production deploys must come from the designated production branch only. Use deploy previews or branch deploys for feature work and non-production testing.
+
 
 ---
 
