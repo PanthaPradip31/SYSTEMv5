@@ -396,6 +396,12 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 
 For production, add the same keys to your host provider's environment settings (for example, Netlify site variables or GitHub repository secrets). Do not commit `.env.local` or real values to the repo.
 
+If you are using Google OAuth with Supabase, also configure your redirect URL in the Supabase Dashboard:
+
+- `https://<your-production-domain>/admin`
+
+This must match the domain used by your deployed app.
+
 You can also use the committed `.env.example` file as a reference for the required keys.
 
 ---

@@ -260,6 +260,8 @@ Deploy your live production system to the web using Vercel so your crew can mana
    * `NEXT_PUBLIC_SUPABASE_URL`
    * `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 5. If you host on Netlify, add the same keys under **Site settings → Build & deploy → Environment**.
+5. If using Google OAuth, add the production callback URL in Supabase:
+   * `https://<your-production-domain>/admin`
 6. Click **Deploy**. Your site will build with Supabase enabled.
 
 > Production deploys must come from the designated production branch only. Use deploy previews or branch deploys for feature work and non-production testing.

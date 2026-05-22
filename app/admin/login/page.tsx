@@ -129,21 +129,38 @@ export default function AdminLogin() {
 
   // Supabase Google OAuth (Gmail) Login Handler
   const handleGoogleLogin = async () => {
+    if (typeof window === "undefined") return
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+      toast.error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.")
+      return
+    }
+
+    const mappedRole = selectedRole === "admin" ? "director" : "observer"
+    localStorage.setItem("pubg_admin_role", mappedRole)
+
+    const redirectTo = `${window.location.origin}/admin`
+
     try {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("pubg_admin_role", selectedRole === "admin" ? "director" : "observer")
-      }
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/admin`,
+          redirectTo,
         },
       })
+
       if (error) {
-        toast.error(error.message)
+        console.error("Google OAuth error:", error)
+        toast.error(error.message || "Google login failed.")
+        return
+      }
+
+      if (data?.url) {
+        window.location.assign(data.url)
       }
     } catch (err: any) {
-      toast.error("Failed to initialize Google login")
+      console.error("Failed to initialize Google login:", err)
+      toast.error(err?.message || "Failed to initialize Google login")
     }
   }
 
