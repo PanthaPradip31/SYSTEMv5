@@ -6,5 +6,11 @@
       "use": "@vercel/next"
     }
   ],
-  "outputDirectory": ".vercel/output"
+  "outputDirectory": ".vercel/output",
+  "cache": {
+    "paths": [
+      "node_modules",
+      ".next/cache"
+    ]
+  }
 }
