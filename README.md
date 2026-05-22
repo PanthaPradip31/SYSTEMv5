@@ -1,5 +1,7 @@
 # PUBG Live Production System
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/e9b1b8bb-07e4-41a7-ae8d-285e2b692006/deploy-status)](https://app.netlify.com/projects/pubgsystemproduction/deploys)
+
 A real-time, automated live production system for PUBG Mobile tournaments that updates overlays dynamically. Built for grassroots tournament organizers who need professional-quality broadcasts without expensive software.
 
 ---

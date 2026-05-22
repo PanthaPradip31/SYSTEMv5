@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useIntroConfig } from "@/lib/store"
+import { useIntroConfig, useTeams } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
 export function BroadcastIntro() {
   const { config } = useIntroConfig()
+  const { teams } = useTeams()
   const [timeLeft, setTimeLeft] = useState(0)
   const [isCounting, setIsCounting] = useState(false)
 
@@ -46,10 +47,48 @@ export function BroadcastIntro() {
   const progressPercent = totalSeconds > 0 ? (timeLeft / totalSeconds) * 100 : 0
   const strokeDashoffset = 282.7 - (282.7 * progressPercent) / 100
 
+  // Combine Sponsors and Teams into alternating array for high-end news crawler look
+  const tickerItems: Array<
+    | { type: "sponsor"; id: string; name: string; mediaType: "image" | "video"; logoUrl?: string; videoUrl?: string }
+    | { type: "team"; id: string; name: string; shortName: string; logo?: string; color: string }
+  > = []
+
+  const sponsorsList = config.sponsors || []
+  const teamsList = teams || []
+  const maxItems = Math.max(sponsorsList.length, teamsList.length)
+  for (let i = 0; i < maxItems; i++) {
+    if (sponsorsList[i]) {
+      tickerItems.push({
+        type: "sponsor",
+        id: sponsorsList[i].id,
+        name: sponsorsList[i].name,
+        mediaType: sponsorsList[i].mediaType,
+        logoUrl: sponsorsList[i].logoUrl,
+        videoUrl: sponsorsList[i].videoUrl,
+      })
+    }
+    if (teamsList[i]) {
+      tickerItems.push({
+        type: "team",
+        id: teamsList[i].id,
+        name: teamsList[i].name,
+        shortName: teamsList[i].shortName,
+        logo: teamsList[i].logo,
+        color: teamsList[i].color,
+      })
+    }
+  }
+
   return (
-    <div className="w-screen h-screen bg-[#07070b] text-white overflow-hidden relative font-sans flex flex-col justify-between p-12">
-      {/* Dynamic Background FX */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.08)_0%,transparent_70%)] pointer-events-none" />
+    <div className="w-screen h-screen bg-[#050508] text-white overflow-hidden relative font-sans flex flex-col justify-between p-12 select-none">
+      {/* Cinematic PUBG Mobile Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-25 pointer-events-none"
+        style={{ backgroundImage: "url('/pubg-background.png')" }}
+      />
+      {/* Dark overlay to guarantee perfect text contrast */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/40 to-black/85 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.06)_0%,transparent_80%)] pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent opacity-60" />
       <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent opacity-60" />
 
@@ -160,7 +199,23 @@ export function BroadcastIntro() {
                   <div>
                     <span className="text-[9px] font-black tracking-wider text-gold uppercase">{caster.role || "ON-AIR CASTER"}</span>
                     <h4 className="text-base font-extrabold text-white tracking-wide uppercase mt-0.5">{caster.name}</h4>
-                    <p className="text-[10px] text-muted-foreground font-semibold">PUBG MOBILE CASTER</p>
+                    
+                    {(caster.instagram || caster.twitter) ? (
+                      <div className="flex gap-2 mt-1 font-mono text-[9px] flex-wrap">
+                        {caster.instagram && (
+                          <span className="flex items-center gap-0.5 text-pink-400 font-bold">
+                            📸 @{caster.instagram}
+                          </span>
+                        )}
+                        {caster.twitter && (
+                          <span className="flex items-center gap-0.5 text-sky-400 font-bold">
+                            🐦 @{caster.twitter}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground font-semibold">PUBG MOBILE CASTER</p>
+                    )}
                   </div>
                 </div>
               ))
@@ -174,34 +229,101 @@ export function BroadcastIntro() {
 
       </div>
 
-      {/* Footer Section: Sponsors / Partners Marquee bar */}
-      <div className="z-10 w-full max-w-7xl mx-auto space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-3 bg-gold rounded" />
-          <h3 className="text-[10px] font-black tracking-widest uppercase text-muted-foreground">OFFICIAL TOURNAMENT SPONSORS</h3>
-        </div>
-
-        <div className="w-full bg-black/40 border border-white/5 rounded-xl px-6 py-4 flex items-center gap-8 overflow-hidden relative">
-          <div className="flex flex-wrap items-center gap-12 justify-center w-full">
-            {config.sponsors.length > 0 ? (
-              config.sponsors.map((sponsor, index) => (
-                <div key={sponsor.id || index} className="flex items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300">
-                  {sponsor.logoUrl ? (
-                    <img src={sponsor.logoUrl} alt={sponsor.name} className="h-6 object-contain" />
-                  ) : (
-                    <div className="flex items-center gap-2 border border-white/10 px-3 py-1 rounded bg-white/5">
-                      <svg className="w-4 h-4 text-gold" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                      </svg>
-                      <span className="text-xs font-black uppercase text-white/80 tracking-widest">{sponsor.name}</span>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-muted-foreground">Official Scrims partners and sponsors</p>
-            )}
+      {/* Footer Section: Sponsors / Partners News Marquee bar */}
+      <div className="z-10 w-full max-w-7xl mx-auto">
+        <div className="w-full bg-zinc-950/80 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden flex items-center relative shadow-[0_0_20px_rgba(0,0,0,0.8)] h-20">
+          
+          {/* Static Left Tag: Professional Broadcast News Style with Local PUBG Mobile Logo */}
+          <div className="h-full px-6 flex items-center justify-center bg-zinc-900 shrink-0 shadow-[4px_0_15px_rgba(0,0,0,0.6)] z-20 border-r border-white/10 relative overflow-hidden">
+            {/* Subtle background glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-gold/10 via-transparent to-transparent opacity-50 pointer-events-none" />
+            <img 
+              src="/pubg-mobile-logo.png" 
+              alt="PUBG Mobile Logo" 
+              className="h-12 object-contain drop-shadow-[0_0_8px_rgba(230,179,37,0.4)] relative z-10 select-none animate-pulse" 
+              style={{ animationDuration: "3s" }}
+            />
           </div>
+
+          {/* Scrolling Ticker Track */}
+          <div className="flex-1 h-full overflow-hidden relative flex items-center bg-black/40">
+            {/* Cinematic fade blurs inside scrolling belt */}
+            <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-zinc-950 to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-zinc-950 to-transparent z-10 pointer-events-none" />
+            
+            <style>{`
+              @keyframes news-ticker-rtl {
+                0% { transform: translateX(0%); }
+                100% { transform: translateX(-33.33%); }
+              }
+              .animate-news-ticker-rtl {
+                display: flex;
+                align-items: center;
+                gap: 4rem;
+                width: max-content;
+                animation: news-ticker-rtl 32s linear infinite;
+              }
+              .animate-news-ticker-rtl:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
+
+            <div className="animate-news-ticker-rtl">
+              {tickerItems.length > 0 ? (
+                // Duplicate elements to ensure smooth infinite loop coverage from Right to Left
+                [...tickerItems, ...tickerItems, ...tickerItems].map((item, index) => (
+                  <div key={`${item.id}-${index}`} className="shrink-0 transition-all duration-300">
+                    
+                    {item.type === "sponsor" ? (
+                      // Gorgeous glowing sponsor media card
+                      <div className="flex items-center gap-2 grayscale hover:grayscale-0 opacity-85 hover:opacity-100 transition-all duration-300 bg-white/5 border border-white/10 rounded-xl px-4 py-2 hover:border-gold/30 hover:shadow-[0_0_12px_rgba(218,165,32,0.25)]">
+                        {item.mediaType === "video" && item.videoUrl ? (
+                          <video
+                            src={item.videoUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="h-12 object-contain rounded bg-black/40 border border-white/5 max-w-[180px]"
+                          />
+                        ) : item.logoUrl ? (
+                          <img src={item.logoUrl} alt={item.name} className="h-10 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.1)]" />
+                        ) : (
+                          <span className="text-xs font-black uppercase text-white/80 tracking-widest">{item.name}</span>
+                        )}
+                      </div>
+                    ) : (
+                      // Breathtaking neon esports combatant team card
+                      <div 
+                        className="flex items-center gap-3 bg-zinc-950/60 border border-white/5 rounded-xl px-4 py-2 hover:border-white/20 transition-all shadow-md"
+                        style={{ borderLeft: `3px solid ${item.color || "#FFD700"}` }}
+                      >
+                        {item.logo ? (
+                          <img src={item.logo} alt={item.name} className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_6px_rgba(255,255,255,0.15)]" />
+                        ) : (
+                          <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center font-bold text-xs uppercase text-muted-foreground shrink-0">
+                            {item.shortName ? item.shortName[0] : "T"}
+                          </div>
+                        )}
+                        <div className="flex flex-col justify-center leading-none text-left">
+                          <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: item.color || "#FFD700" }}>
+                            {item.shortName}
+                          </span>
+                          <span className="text-xs font-extrabold text-white uppercase tracking-wide mt-0.5 whitespace-nowrap">
+                            {item.name}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground pl-6 uppercase tracking-wider font-semibold">Official Scrims partners and sponsors</p>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import useSWR, { mutate } from 'swr'
-import type { Tournament, Team, Match, TeamStanding, KillFeedEvent, OverlayConfig, Player, MatchResult, IntroConfig } from './types'
+import type { Tournament, Team, Match, TeamStanding, KillFeedEvent, OverlayConfig, Player, MatchResult, IntroConfig, Sponsor } from './types'
 import { DEFAULT_POINT_SYSTEM } from './types'
 import { getRealtimeSync } from './realtime'
 import { supabase } from './supabase'
@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   STANDINGS: "pubg_standings",
   KILL_FEED: "pubg_kill_feed",
   OVERLAY_CONFIG: "pubg_overlay_config",
+  SPONSORS: "pubg_sponsors",
 }
 
 const SWR_CONFIG = {
@@ -21,6 +22,19 @@ const SWR_CONFIG = {
   revalidateOnReconnect: false,
   refreshInterval: 0,
   dedupingInterval: 5000,
+}
+
+const SUPABASE_ENABLED = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+)
+
+const getSupabaseErrorMessage = (error: unknown) => {
+  if (typeof error === 'object' && error !== null) {
+    const err = error as { message?: string; code?: string }
+    return `${err.message ?? 'Supabase error'}${err.code ? ` (${err.code})` : ''}`
+  }
+  return String(error)
 }
 
 // Helper to safely access localStorage
@@ -129,6 +143,10 @@ const tournamentFetcher = async (): Promise<Tournament> => {
 }
 
 const teamsFetcher = async (): Promise<Team[]> => {
+  if (!SUPABASE_ENABLED) {
+    return getFromStorage<Team[]>(STORAGE_KEYS.TEAMS, [])
+  }
+
   try {
     const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
@@ -170,7 +188,9 @@ const teamsFetcher = async (): Promise<Team[]> => {
       return resolvedTeams
     }
   } catch (e) {
-    console.warn("Supabase teams fetch failed, using local storage:", e)
+    console.warn(
+      `Supabase teams fetch failed, using local storage: ${getSupabaseErrorMessage(e)}`
+    )
   }
   return getFromStorage<Team[]>(STORAGE_KEYS.TEAMS, [])
 }
@@ -269,6 +289,33 @@ const overlayConfigFetcher = async (): Promise<OverlayConfig> => {
   })
 }
 
+const sponsorsFetcher = async (): Promise<Sponsor[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('sponsors')
+      .select('*')
+      .order('updated_at', { ascending: true })
+    if (error) throw error
+    if (data && data.length > 0) {
+      const resolved = data.map(s => ({
+        id: s.id,
+        name: s.name,
+        logoUrl: s.logo_url || undefined,
+        videoUrl: s.video_url || undefined,
+        mediaType: s.media_type as "image" | "video",
+      }))
+      setToStorage(STORAGE_KEYS.SPONSORS, resolved)
+      return resolved
+    }
+  } catch (e) {
+    console.warn("Supabase sponsors fetch failed, using local storage:", e)
+  }
+  return getFromStorage<Sponsor[]>(STORAGE_KEYS.SPONSORS, [
+    { id: "s1", name: "Apex Gaming", logoUrl: "", mediaType: "image" },
+    { id: "s2", name: "Intel Core", logoUrl: "", mediaType: "image" }
+  ])
+}
+
 // Relational Save router to keep the existing saveToSupabase calls clean and functional
 const saveToSupabase = async <T>(key: string, value: T): Promise<void> => {
   setToStorage(key, value)
@@ -283,8 +330,22 @@ const saveToSupabase = async <T>(key: string, value: T): Promise<void> => {
         updated_at: new Date().toISOString()
       })
     } else if (key === STORAGE_KEYS.TEAMS) {
-      const teams = (value as any as Team[]).map(t => sanitizeTeamRoster(t))
-      // 1. Upsert Teams
+      const teams = value as any as Team[]
+      
+      // 1. Clean up deleted teams from the database
+      const activeTeamIds = teams.map(t => t.id)
+      if (activeTeamIds.length > 0) {
+        await supabase.from('teams').delete().not('id', 'in', `(${activeTeamIds.join(',')})`)
+      } else {
+        await supabase.from('teams').delete().neq('id', '')
+      }
+
+      if (teams.length === 0) {
+        await supabase.from('players').delete().neq('id', '')
+        return
+      }
+
+      // 2. Upsert active Teams
       const teamsToUpsert = teams.map(t => ({
         id: t.id,
         name: t.name,
@@ -295,9 +356,9 @@ const saveToSupabase = async <T>(key: string, value: T): Promise<void> => {
       }))
       await supabase.from('teams').upsert(teamsToUpsert, { onConflict: 'id' })
 
-      // 2. Upsert Players
+      // 3. Upsert Players
       const rawPlayers = teams.flatMap(t => 
-        t.players.map(p => ({
+        (t.players || []).map(p => ({
           id: p.id,
           team_id: t.id,
           name: p.name,
@@ -309,13 +370,19 @@ const saveToSupabase = async <T>(key: string, value: T): Promise<void> => {
         }))
       )
       
-      // Deduplicate inside the payload batch by player id to prevent PG duplicate key upsert batch failures!
+      // Deduplicate inside the payload batch by player id
       const uniquePlayersMap = new Map<string, typeof rawPlayers[0]>()
       rawPlayers.forEach(p => uniquePlayersMap.set(p.id, p))
       const playersToUpsert = Array.from(uniquePlayersMap.values())
 
       if (playersToUpsert.length > 0) {
         await supabase.from('players').upsert(playersToUpsert, { onConflict: 'id' })
+        
+        // 4. Clean up deleted players from the database
+        const activePlayerIds = playersToUpsert.map(p => p.id)
+        await supabase.from('players').delete().not('id', 'in', `(${activePlayerIds.join(',')})`)
+      } else {
+        await supabase.from('players').delete().neq('id', '')
       }
     } else if (key === STORAGE_KEYS.STANDINGS) {
       const standings = value as any as TeamStanding[]
@@ -364,6 +431,27 @@ const saveToSupabase = async <T>(key: string, value: T): Promise<void> => {
         animations_enabled: config.animationsEnabled,
         updated_at: new Date().toISOString()
       })
+    } else if (key === STORAGE_KEYS.SPONSORS) {
+      const sponsors = value as any as Sponsor[]
+      if (sponsors.length === 0) {
+        await supabase.from('sponsors').delete().neq('id', '')
+        return
+      }
+      
+      const sponsorsToUpsert = sponsors.map(s => ({
+        id: s.id,
+        name: s.name,
+        logo_url: s.logoUrl || null,
+        video_url: s.videoUrl || null,
+        media_type: s.mediaType || 'image',
+        updated_at: new Date().toISOString()
+      }))
+      await supabase.from('sponsors').upsert(sponsorsToUpsert, { onConflict: 'id' })
+      
+      const activeIds = sponsors.map(s => s.id)
+      if (activeIds.length > 0) {
+        await supabase.from('sponsors').delete().not('id', 'in', `(${activeIds.join(',')})`)
+      }
     }
   } catch (e) {
     console.warn('Supabase relational sync warning (falling back to localStorage):', e)
@@ -373,7 +461,6 @@ const saveToSupabase = async <T>(key: string, value: T): Promise<void> => {
 // Subscribe to Supabase realtime channels for cross-device updates
 if (typeof window !== 'undefined') {
   try {
-    // Clean up any existing channel with the same name before subscribing to avoid hot-reload duplicate subscription errors!
     const existing = supabase.channel('pubg_relational_changes')
     supabase.removeChannel(existing)
 
@@ -396,6 +483,9 @@ if (typeof window !== 'undefined') {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'overlay_config' }, () => {
         mutate('overlayConfig')
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sponsors' }, () => {
+        mutate('sponsors')
       })
       .subscribe()
   } catch (e) {
@@ -1020,20 +1110,40 @@ export function useStandings() {
   
   // Dynamically join standings with latest team data so it is always fresh and lightweight in storage
   const joinedStandings = useMemo(() => {
-    return (data || []).map(standing => {
-      const foundTeam = teams.find(t => t.id === standing.teamId)
-      return {
+    const standingsByTeamId = new Map((data || []).map(standing => [standing.teamId, standing]))
+    const allRegisteredStandings = teams.map(team => {
+      const standing = standingsByTeamId.get(team.id)
+      return standing
+        ? { ...standing, team }
+        : {
+            teamId: team.id,
+            team,
+            rank: 0,
+            totalPoints: 0,
+            totalKills: 0,
+            placementPoints: 0,
+            killPoints: 0,
+            wwcd: 0,
+            matches: [],
+          }
+    })
+
+    const teamsById = new Map(teams.map((team) => [team.id, team]))
+    const extras = (data || [])
+      .filter(standing => !teamsById.has(standing.teamId))
+      .map(standing => ({
         ...standing,
-        team: foundTeam || standing.team || {
+        team: standing.team || {
           id: standing.teamId,
-          name: "Loading Team...",
+          name: "Unknown Team",
           shortName: "UNK",
           logo: "/placeholder.svg",
           color: "#7F8C8D",
-          players: []
-        }
-      }
-    })
+          players: [],
+        },
+      }))
+
+    return [...allRegisteredStandings, ...extras]
   }, [data, teams])
   
   return { standings: joinedStandings, error, isLoading, updateStandings, addMatchResult }
@@ -1076,11 +1186,41 @@ export function useOverlayConfig() {
 
 // Utility to calculate standings from teams and match results
 export function calculateStandings(teams: Team[], standings: TeamStanding[]): TeamStanding[] {
-  return standings
+  const teamById = new Map(teams.map(team => [team.id, team]))
+  const standingsById = new Map(standings.map(standing => [standing.teamId, standing]))
+
+  const mergedStandings: TeamStanding[] = teams.map(team => {
+    const existing = standingsById.get(team.id)
+    return existing
+      ? { ...existing, team }
+      : {
+          teamId: team.id,
+          team,
+          rank: 0,
+          totalPoints: 0,
+          totalKills: 0,
+          placementPoints: 0,
+          killPoints: 0,
+          wwcd: 0,
+          matches: [],
+        }
+  })
+
+  const extraStandings = standings
+    .filter(standing => !teamById.has(standing.teamId))
     .map(standing => ({
       ...standing,
-      team: teams.find(t => t.id === standing.teamId) || standing.team,
+      team: standing.team || {
+        id: standing.teamId,
+        name: "Unknown Team",
+        shortName: "UNK",
+        logo: "/placeholder.svg",
+        color: "#7F8C8D",
+        players: [],
+      },
     }))
+
+  return [...mergedStandings, ...extraStandings]
     .sort((a, b) => {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
       if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills
@@ -1094,6 +1234,7 @@ export function calculateStandings(teams: Team[], standings: TeamStanding[]): Te
 
 // Hook to manage stream intro overlay settings (sponsors, casters, countdowns)
 export function useIntroConfig() {
+  const { data: sponsorsData } = useSWR('sponsors', sponsorsFetcher, SWR_CONFIG)
   const { data, error, isLoading } = useSWR('introConfig', () => {
     return getFromStorage<IntroConfig>("pubg_intro_config", {
       tournamentTitle: "PUBG MOBILE CHAMPIONSHIP",
@@ -1104,10 +1245,7 @@ export function useIntroConfig() {
         { id: "c1", name: "Caster One", role: "Play-by-Play", photo: "" },
         { id: "c2", name: "Caster Two", role: "Color Commentator", photo: "" }
       ],
-      sponsors: [
-        { id: "s1", name: "Apex Gaming", logoUrl: "" },
-        { id: "s2", name: "Intel Core", logoUrl: "" }
-      ],
+      sponsors: [],
       countdownMinutes: 5,
       showCountdown: true,
       streamTitle: "MATCH STARTING SOON",
@@ -1126,12 +1264,27 @@ export function useIntroConfig() {
       showCountdown: true,
       streamTitle: "MATCH STARTING SOON",
     })
-    const updated = { ...current, ...updates } as IntroConfig
+
+    if (updates.sponsors) {
+      await saveToSupabase(STORAGE_KEYS.SPONSORS, updates.sponsors)
+      mutate('sponsors', updates.sponsors, false)
+    }
+
+    const { sponsors: _, ...restUpdates } = updates
+    const updated = { ...current, ...restUpdates } as IntroConfig
     setToStorage("pubg_intro_config", updated)
     mutate('introConfig', updated, false)
-    getRealtimeSync()?.broadcast('INTRO_UPDATE', updated)
+    getRealtimeSync()?.broadcast('INTRO_UPDATE', { ...updated, sponsors: updates.sponsors || sponsorsData || [] })
   }
 
-  return { config: data, error, isLoading, updateConfig }
+  const memoizedConfig = useMemo(() => {
+    if (!data) return null
+    return {
+      ...data,
+      sponsors: sponsorsData || data.sponsors || [],
+    }
+  }, [data, sponsorsData])
+
+  return { config: memoizedConfig, error, isLoading, updateConfig }
 }
 

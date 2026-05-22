@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils"
 import { useKillFeed, useTeams } from "@/lib/store"
 import { SkullIcon } from "@/components/icons"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface KillFeedProps {
   maxItems?: number
@@ -21,7 +22,6 @@ export function KillFeed({ maxItems = 6, className }: KillFeedProps) {
   }
 
   const getWeaponIcon = (weapon: string) => {
-    // Map weapon names to icons - simplified for demo
     const weaponIcons: Record<string, string> = {
       AWM: "🎯",
       M416: "🔫",
@@ -42,67 +42,77 @@ export function KillFeed({ maxItems = 6, className }: KillFeedProps) {
   }
 
   return (
-    <div className={cn("space-y-1", className)}>
-      {displayEvents.map((event, index) => (
-        <div
-          key={event.id}
-          className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-lg",
-            "bg-background/80 backdrop-blur-sm",
-            "animate-slide-in-right shadow-lg",
-            event.isKnock && "border-l-2 border-knocked",
-            !event.isKnock && "border-l-2 border-destructive",
-          )}
-          style={{ animationDelay: `${index * 50}ms` }}
-        >
-          {/* Killer */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span
-              className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase"
-              style={{
-                backgroundColor: `${getTeamColor(event.killerTeam)}20`,
-                color: getTeamColor(event.killerTeam),
-                borderLeft: `2px solid ${getTeamColor(event.killerTeam)}`,
-              }}
-            >
-              {event.killerTeam}
-            </span>
-            <span className="font-semibold text-sm truncate text-foreground">{event.killerName}</span>
-          </div>
-
-          {/* Weapon/Action */}
-          <div className="flex items-center gap-1 px-2 shrink-0">
-            <span className="text-sm">{getWeaponIcon(event.weapon)}</span>
-            {event.isKnock ? (
-              <span className="text-[10px] text-knocked uppercase font-bold">Knocked</span>
-            ) : (
-              <SkullIcon className="w-4 h-4 text-destructive" />
+    <div className={cn("space-y-1.5 overflow-hidden p-1", className)}>
+      <AnimatePresence mode="popLayout">
+        {displayEvents.map((event, index) => (
+          <motion.div
+            layout
+            key={`${event.id}-${index}`}
+            initial={{ opacity: 0, x: 250, scale: 0.9, filter: "blur(4px)" }}
+            animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 0.9, x: -100, filter: "blur(4px)" }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 26,
+              mass: 0.8,
+              layout: { type: "spring", stiffness: 350, damping: 28 },
+            }}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg",
+              "bg-background/80 backdrop-blur-sm border border-white/5 shadow-2xl",
+              event.isKnock ? "border-l-4 border-knocked" : "border-l-4 border-destructive",
             )}
-          </div>
+          >
+            {/* Killer */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span
+                className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
+                style={{
+                  backgroundColor: `${getTeamColor(event.killerTeam)}20`,
+                  color: getTeamColor(event.killerTeam),
+                  borderLeft: `2px solid ${getTeamColor(event.killerTeam)}`,
+                }}
+              >
+                {event.killerTeam}
+              </span>
+              <span className="font-bold text-sm truncate text-foreground tracking-wide">{event.killerName}</span>
+            </div>
 
-          {/* Victim */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span
-              className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase"
-              style={{
-                backgroundColor: `${getTeamColor(event.victimTeam)}20`,
-                color: getTeamColor(event.victimTeam),
-                borderLeft: `2px solid ${getTeamColor(event.victimTeam)}`,
-              }}
-            >
-              {event.victimTeam}
-            </span>
-            <span
-              className={cn(
-                "font-semibold text-sm truncate",
-                event.isKnock ? "text-knocked" : "text-muted-foreground line-through",
+            {/* Weapon/Action */}
+            <div className="flex items-center gap-1 px-2 shrink-0">
+              <span className="text-sm">{getWeaponIcon(event.weapon)}</span>
+              {event.isKnock ? (
+                <span className="text-[10px] text-knocked uppercase font-black tracking-wider animate-pulse">Knocked</span>
+              ) : (
+                <SkullIcon className="w-4 h-4 text-destructive drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]" />
               )}
-            >
-              {event.victimName}
-            </span>
-          </div>
-        </div>
-      ))}
+            </div>
+
+            {/* Victim */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span
+                className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
+                style={{
+                  backgroundColor: `${getTeamColor(event.victimTeam)}20`,
+                  color: getTeamColor(event.victimTeam),
+                  borderLeft: `2px solid ${getTeamColor(event.victimTeam)}`,
+                }}
+              >
+                {event.victimTeam}
+              </span>
+              <span
+                className={cn(
+                  "font-bold text-sm truncate tracking-wide",
+                  event.isKnock ? "text-knocked" : "text-muted-foreground line-through opacity-70",
+                )}
+              >
+                {event.victimName}
+              </span>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   )
 }

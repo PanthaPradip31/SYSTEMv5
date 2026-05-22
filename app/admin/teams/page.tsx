@@ -29,15 +29,18 @@ function getRandomColor() {
   return PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)].value
 }
 
+const MIN_TEAMS = 16
+const MAX_TEAMS = 25
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function TeamsPage() {
   const { teams, isLoading, addTeam, addTeamsBulk, updateTeam, removeTeam, removeTeamsBulk } = useTeams()
 
-  // Automatically prune the lobby to exactly 20 teams in the background if it exceeds the limit!
+  // Automatically prune the lobby to exactly MAX_TEAMS teams in the background if it exceeds the limit!
   useEffect(() => {
-    if (teams && teams.length > 20) {
-      const extraTeams = teams.slice(20)
+    if (teams && teams.length > MAX_TEAMS) {
+      const extraTeams = teams.slice(MAX_TEAMS)
       removeTeamsBulk(extraTeams.map(t => t.id))
     }
   }, [teams, removeTeamsBulk])
@@ -68,8 +71,8 @@ export default function TeamsPage() {
   }
 
   const handleAddTeam = () => {
-    if (teams.length >= 20) {
-      setErrorMsg("SLOT FULL: Maximum tournament limit of 20 teams exceeded!")
+    if (teams.length >= MAX_TEAMS) {
+      setErrorMsg(`SLOT FULL: Maximum tournament limit of ${MAX_TEAMS} teams exceeded!`)
       return
     }
     if (!newTeamName || !newTeamShortName) return
@@ -103,19 +106,19 @@ export default function TeamsPage() {
   }
 
   const handleLoadSampleTeams = async () => {
-    if (teams.length >= 20) {
-      setErrorMsg("SLOT FULL: Maximum tournament limit of 20 teams has been reached!")
+    if (teams.length >= MAX_TEAMS) {
+      setErrorMsg(`SLOT FULL: Maximum tournament limit of ${MAX_TEAMS} teams has been reached!`)
       return
     }
     setErrorMsg(null)
     const teamsToLoad: Team[] = []
-    const availableSlots = 20 - teams.length
+    const availableSlots = MAX_TEAMS - teams.length
 
     if (teams.length === 0) {
-      // Shuffle and pick exactly 20 random teams from the sample roster
+      // Shuffle and pick exactly MAX_TEAMS random teams from the sample roster
       const selectedTeams = [...SAMPLE_TEAMS]
         .sort(() => Math.random() - 0.5)
-        .slice(0, Math.min(20, availableSlots))
+        .slice(0, Math.min(MAX_TEAMS, availableSlots))
 
       selectedTeams.forEach((team) => {
         // ensure sample teams always have 6 players
@@ -139,7 +142,7 @@ export default function TeamsPage() {
       const missing = SAMPLE_TEAMS.filter((team) => !existingIds.has(team.id))
       const selectedTeams = [...missing]
         .sort(() => Math.random() - 0.5)
-        .slice(0, Math.min(20, availableSlots))
+        .slice(0, Math.min(MAX_TEAMS, availableSlots))
 
       selectedTeams.forEach((team) => {
         const players = team.players.length >= 6 ? team.players : [
@@ -165,7 +168,7 @@ export default function TeamsPage() {
 
   const handlePruneLobby = async () => {
     setErrorMsg(null)
-    const extraTeams = teams.slice(20)
+    const extraTeams = teams.slice(MAX_TEAMS)
     await removeTeamsBulk(extraTeams.map(t => t.id))
   }
 
@@ -182,22 +185,22 @@ export default function TeamsPage() {
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
-          {teams.length > 20 && (
+          {teams.length > MAX_TEAMS && (
             <Button 
               onClick={handlePruneLobby} 
               variant="destructive"
               className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider text-xs px-4 py-2 rounded-xl transition-all duration-300 shadow-lg shadow-red-500/20"
             >
-              🧹 Prune Lobby to 20
+              🧹 Prune Lobby to 25
             </Button>
           )}
           <Button 
             onClick={handleLoadSampleTeams} 
             variant="outline" 
-            disabled={teams.length >= 20}
+            disabled={teams.length >= MAX_TEAMS}
             className="border-gold/30 hover:border-gold/80 hover:bg-gold/10 text-gold transition-all duration-300 gap-1.5 shrink-0"
           >
-            🎮 Load Roster Presets (20 Teams)
+            🎮 Load Roster Presets (25 Teams)
           </Button>
         </div>
       </div>
@@ -212,32 +215,32 @@ export default function TeamsPage() {
             </span>
             <span className={cn(
               "font-mono font-bold px-2.5 py-0.5 rounded text-xs tracking-wide shadow-xs border",
-              teams.length >= 20 
+              teams.length >= MAX_TEAMS 
                 ? "bg-red-500/10 text-red-400 border-red-500/20" 
                 : "bg-gold/10 text-gold border-gold/20"
             )}>
-              {teams.length} / 20 SLOTS ACTIVE
+              {teams.length} / 25 SLOTS ACTIVE
             </span>
           </div>
           <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/5 p-0.5 mt-2">
             <div
               className={cn(
                 "h-full rounded-full transition-all duration-500",
-                teams.length >= 20 
+                teams.length >= MAX_TEAMS 
                   ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.7)]" 
-                  : teams.length >= 16 
+                  : teams.length >= MIN_TEAMS 
                     ? "bg-linear-to-r from-amber-500 to-emerald-500" 
                     : "bg-linear-to-r from-gold to-orange-500"
               )}
-              style={{ width: `${Math.min(100, (teams.length / 20) * 100)}%` }}
+              style={{ width: `${Math.min(100, (teams.length / MAX_TEAMS) * 100)}%` }}
             />
           </div>
           <p className="text-[10px] text-muted-foreground/80 pt-1 tracking-wide uppercase font-medium">
             {teams.length < 16 
               ? `⚠️ MINIMUM CRITICAL CAP NOT REACHED: Esports lobby requires at least 16 teams (Deploy ${16 - teams.length} more).`
-              : teams.length >= 20 
-                ? "🔴 SLOTS EXCEEDED: MAXIMUM COMPETITIVE MATCH LIMIT OF 20 TEAMS DEPLOYED!"
-                : "✅ STABLE LOBBY CONFIGURATION: Optimal lobby size reached (16 to 20 active teams)."
+              : teams.length >= MAX_TEAMS 
+                ? `🔴 SLOTS EXCEEDED: MAXIMUM COMPETITIVE MATCH LIMIT OF ${MAX_TEAMS} TEAMS DEPLOYED!`
+                : `✅ STABLE LOBBY CONFIGURATION: Optimal lobby size reached (${MIN_TEAMS} to ${MAX_TEAMS} active teams).`
             }
           </p>
         </div>
@@ -276,7 +279,7 @@ export default function TeamsPage() {
                     value={newTeamName} 
                     onChange={(e) => setNewTeamName(e.target.value)} 
                     className="bg-black/20 border-white/5 focus:border-gold/50 h-10 mt-1 text-sm rounded-lg" 
-                    disabled={teams.length >= 20} 
+                    disabled={teams.length >= MAX_TEAMS} 
                   />
                 </div>
                 <div>
@@ -287,7 +290,7 @@ export default function TeamsPage() {
                     onChange={(e) => setNewTeamShortName(e.target.value)} 
                     className="bg-black/20 border-white/5 focus:border-gold/50 h-10 mt-1 text-sm font-mono tracking-widest uppercase rounded-lg" 
                     maxLength={10} 
-                    disabled={teams.length >= 20} 
+                    disabled={teams.length >= MAX_TEAMS} 
                   />
                 </div>
               </div>
@@ -309,13 +312,13 @@ export default function TeamsPage() {
                       value={newTeamLogo} 
                       onChange={(e) => { setNewTeamLogo(e.target.value); setNewTeamLogoPreview(e.target.value.trim() || null) }} 
                       className="bg-black/20 border-white/5 focus:border-gold/50 h-8 text-xs rounded-md" 
-                      disabled={teams.length >= 20} 
+                      disabled={teams.length >= MAX_TEAMS} 
                     />
-                    <label className={cn("inline-block cursor-pointer w-full", teams.length >= 20 && "pointer-events-none opacity-40")}>
-                      <Button variant="outline" size="sm" asChild disabled={teams.length >= 20} className="h-7 text-xs w-full border-white/10 bg-zinc-900/60 hover:bg-gold/10 hover:text-gold transition-colors">
+                    <label className={cn("inline-block cursor-pointer w-full", teams.length >= MAX_TEAMS && "pointer-events-none opacity-40")}>
+                      <Button variant="outline" size="sm" asChild disabled={teams.length >= MAX_TEAMS} className="h-7 text-xs w-full border-white/10 bg-zinc-900/60 hover:bg-gold/10 hover:text-gold transition-colors">
                         <span>📁 Upload Local File</span>
                       </Button>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleNewTeamFileChange} disabled={teams.length >= 20} />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleNewTeamFileChange} disabled={teams.length >= MAX_TEAMS} />
                     </label>
                   </div>
                 </div>
@@ -330,10 +333,10 @@ export default function TeamsPage() {
                       key={c.value}
                       type="button"
                       onClick={() => setSelectedColor(c.value)}
-                      disabled={teams.length >= 20}
+                      disabled={teams.length >= MAX_TEAMS}
                       className={cn(
                         "w-7 h-7 rounded-full transition-all duration-300 relative shrink-0",
-                        teams.length >= 20 && "opacity-30 cursor-not-allowed"
+                        teams.length >= MAX_TEAMS && "opacity-30 cursor-not-allowed"
                       )}
                       style={{ 
                         backgroundColor: c.value, 
@@ -352,7 +355,7 @@ export default function TeamsPage() {
 
               <Button 
                 onClick={handleAddTeam} 
-                disabled={teams.length >= 20 || !newTeamName || !newTeamShortName}
+                disabled={teams.length >= MAX_TEAMS || !newTeamName || !newTeamShortName}
                 className="w-full h-11 gradient-gold text-primary-foreground font-bold tracking-wider uppercase rounded-xl transition-all duration-300 shadow-lg hover:shadow-gold/20"
               >
                 🚀 Deploy Team To Lobby
@@ -456,7 +459,7 @@ export default function TeamsPage() {
           🏆 Deployed Lobby combatants ({teams.length})
         </h2>
         {teams.length > 0 && (
-          <p className="text-xs text-muted-foreground font-mono">LOBBY SIZE STABILITY: {(teams.length / 20 * 100).toFixed(0)}%</p>
+          <p className="text-xs text-muted-foreground font-mono">LOBBY SIZE STABILITY: {(teams.length / MAX_TEAMS * 100).toFixed(0)}%</p>
         )}
       </div>
 
@@ -504,7 +507,7 @@ export default function TeamsPage() {
             onClick={handleLoadSampleTeams} 
             className="gradient-gold text-primary-foreground font-bold tracking-wider uppercase rounded-lg px-6 hover:shadow-gold/10 transition-shadow"
           >
-            🎮 Deploy presets (20 Teams)
+            🎮 Deploy presets (25 Teams)
           </Button>
         </div>
       ) : null}
@@ -599,9 +602,11 @@ function TeamCard({
 
   const savePlayerNames = async () => {
     const six = ensureSixPlayers(team.players)
-    const updated: Player[] = await Promise.all(
+    const updatedPlayersRaw = await Promise.all(
       six.map(async (p, i) => {
-        const finalName = playerDraft[i] || p.name
+        const finalName = playerDraft[i]?.trim() || ""
+        if (!finalName) return null
+
         const customPhoto = playerPhotoDraft[i]?.trim() || ""
         const resolvedPhoto = customPhoto.startsWith("data:image")
           ? await compressBase64Image(customPhoto)
@@ -614,6 +619,7 @@ function TeamCard({
         }
       })
     )
+    const updated = updatedPlayersRaw.filter(Boolean) as Player[]
     updateTeam(team.id, { players: updated })
     setEditingPlayers(false)
   }
@@ -715,9 +721,22 @@ function TeamCard({
                   </div>
                 </div>
               ))}
-              <div className="flex gap-1.5 pt-1.5">
-                <Button size="sm" className="h-7 text-xs flex-1 uppercase tracking-wider font-bold" onClick={savePlayerNames}>Save Changes</Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs text-neutral-400" onClick={() => setEditingPlayers(false)}>Cancel</Button>
+              <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+                <div className="flex gap-1.5">
+                  <Button size="sm" className="h-7 text-xs flex-1 uppercase tracking-wider font-bold" onClick={savePlayerNames}>Save Changes</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs text-neutral-400" onClick={() => setEditingPlayers(false)}>Cancel</Button>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  className="h-7 text-[10px] w-full bg-red-950/60 border border-red-500/20 text-red-400 hover:bg-red-900/60 font-bold uppercase tracking-wider" 
+                  onClick={() => {
+                    setPlayerDraft(["", "", "", "", "", ""])
+                    setPlayerPhotoDraft(["", "", "", "", "", ""])
+                  }}
+                >
+                  🧹 Clear/Wipe All Slots
+                </Button>
               </div>
             </div>
           ) : (
