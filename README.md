@@ -402,6 +402,11 @@ If you are using Google OAuth with Supabase, also configure your redirect URL in
 
 This must match the domain used by your deployed app.
 
+If your site is deployed on Netlify, install or update the Next.js plugin in the Netlify dashboard to the latest version:
+
+- plugin: `@netlify/plugin-nextjs`
+- desired version: `5.15.11` or later
+
 You can also use the committed `.env.example` file as a reference for the required keys.
 
 ---
