@@ -378,13 +378,17 @@ location.reload()
 
 ### Environment Variables
 
-No environment variables required for basic functionality.
+This project uses Supabase for database-backed features and requires the following environment variables for deployment.
 
-For future database integration:
-\`\`\`env
-DATABASE_URL=your_database_url
-NEXT_PUBLIC_WS_URL=your_websocket_server
-\`\`\`
+Create a local `.env.local` file with:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+```
+
+For production, add the same keys to your host provider's environment settings (for example, Netlify site variables or GitHub repository secrets). Do not commit `.env.local` or real values to the repo.
+
+You can also use the committed `.env.example` file as a reference for the required keys.
 
 ---
 

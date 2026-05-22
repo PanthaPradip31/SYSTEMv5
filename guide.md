@@ -91,8 +91,10 @@ To create your single admin user:
 
 Create a file named `.env.local` in the project root and add your Supabase credentials:
 
-NEXT_PUBLIC_SUPABASE_URL=https://cbfcmvnvvqmlgsqnvmam.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_vqN_LY0yAQ-CJPoslGXFug_3hFIMShn
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+
+> NOTE: Do not commit `.env.local` to source control. This repository already ignores `.env*`.
 
 
 ### 2. Install and Run Local Server
@@ -251,12 +253,13 @@ Deploy your live production system to the web using Vercel so your crew can mana
 
 ### 2. Deploy to Vercel
 
-1. Open the [Vercel Dashboard](https://vercel.com) and click **"Add New" > "Project"**.
+1. Open the [Netlify Dashboard](https://app.netlify.com) and go to your site settings, or open the [Vercel Dashboard](https://vercel.com) if you prefer.
 2. Import your GitHub repository.
-3. In **Environment Variables**, add the Supabase credentials from your `.env.local` file:
+3. In **Environment Variables** / **Site variables**, add the Supabase credentials from your `.env.local` file:
    * `NEXT_PUBLIC_SUPABASE_URL`
    * `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-4. Click **Deploy**. Vercel will build and host your esports graphics portal in seconds!
+4. If you host on Netlify, add the same keys under **Site settings → Build & deploy → Environment**.
+5. Click **Deploy**. Your site will build with Supabase enabled.
 
 ---
 
