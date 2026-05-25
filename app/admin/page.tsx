@@ -6,9 +6,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
 import { getRealtimeSync } from "@/lib/realtime"
+import { toast } from "sonner"
 import type { MVPData } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { toast } from "sonner"
 
 // ─── Inline SVG Icons ────────────────────────────────────────────────────────
 const TrophyIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
   const { teams, updateTeam } = useTeams()
   const { killFeed } = useKillFeed()
   
-  const [role, setRole] = useState<"director" | "caster-locked">("director")
+  const [role, setRole] = useState<"observer" | "director" | "caster-locked">("director")
   const [scale, setScale] = useState(0.2)
   const monitorRef = useRef<HTMLDivElement>(null)
 
@@ -74,17 +74,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("pubg_admin_role") as "observer" | "director" | "caster-locked" | null
-      if (saved === "observer") {
-        setRole("caster-locked")
-      } else if (saved === "director" || saved === "caster-locked") {
-        setRole(saved)
-      }
+      const saved = localStorage.getItem("pubg_admin_role") as "observer" | "director" | "caster-locked"
+      if (saved) setRole(saved)
     }
   }, [])
 
   // Caster-locked sessions cannot switch to Director — enforced client-side
-  const handleRoleChange = (newRole: "director" | "caster-locked") => {
+  const handleRoleChange = (newRole: "observer" | "director") => {
     if (role === "caster-locked") return // Hard block: casters cannot escalate privileges
     setRole(newRole)
     if (typeof window !== "undefined") {
@@ -187,12 +183,12 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-black tracking-wider uppercase text-white flex items-center gap-2.5">
             <span className="w-2.5 h-6 bg-gold rounded shadow-[0_0_8px_rgba(218,165,32,0.5)]" />
-            {role === "director" ? "Broadcast Director Deck" : "Caster Desk"}
+            {role === "director" ? "Broadcast Director Deck" : "Caster Observer Deck"}
           </h1>
           <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">
             {role === "director"
               ? "Superuser console with live interactive stinger animations, database mutations, and overlay controls"
-              : "Read-only caster desk showing live telemetry, player vitals, and overlay previews"
+              : "Read-only caster dashboard showing live telemetry, player vitals, and scroll elimination ticker"
             }
           </p>
         </div>
@@ -201,15 +197,19 @@ export default function AdminDashboard() {
         {role !== "caster-locked" && (
           <div className="flex items-center bg-zinc-950 border border-white/5 rounded-xl p-1 shrink-0 relative overflow-hidden self-start md:self-auto shadow-2xl">
             <button
-              onClick={() => handleRoleChange("caster-locked")}
-              className="flex items-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 text-muted-foreground hover:text-foreground"
+              onClick={() => handleRoleChange("observer")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 ${
+                role === "observer" ? "bg-white/10 text-white shadow-lg" : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               <EyeIcon className="w-4 h-4 text-gold" />
               Caster Desk
             </button>
             <button
               onClick={() => handleRoleChange("director")}
-              className="flex items-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 gradient-gold text-primary-foreground font-black shadow-lg"
+              className={`flex items-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 ${
+                role === "director" ? "gradient-gold text-primary-foreground font-black shadow-lg" : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               <ShieldAlertIcon className="w-4 h-4" />
               Director Desk
@@ -283,10 +283,26 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* ── Caster Desk Dashboard Layout ── */}
-      {role === "caster-locked" && (
+      {/* ── Observer / Caster Dashboard Layout ── */}
+      {role !== "director" && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 stagger-2">
           
+          {/* Notice banner — only show for free observer, not for locked casters */}
+          {role === "observer" && (
+            <div className="xl:col-span-3 p-4 rounded-xl bg-gold/5 border border-gold/15 flex items-center justify-between text-xs stagger-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gold animate-ping" />
+                <span className="text-muted-foreground uppercase font-black tracking-widest text-[10px]">Lobby Deck Notice:</span>
+                <span className="text-neutral-200">You are on the read-only Caster Deck. Switch to Director Deck to access stinger controls.</span>
+              </div>
+              <Button
+                onClick={() => handleRoleChange("director")}
+                className="gradient-gold text-primary-foreground font-black uppercase text-[9px] tracking-widest h-8 px-4 rounded-lg active:scale-95 transition-all shrink-0 ml-4"
+              >
+                Switch to Director
+              </Button>
+            </div>
+          )}
           {/* Hard-locked notice for caster sessions */}
           {role === "caster-locked" && (
             <div className="xl:col-span-3 p-4 rounded-xl bg-red-500/5 border border-red-500/15 flex items-center gap-3 text-xs stagger-1">

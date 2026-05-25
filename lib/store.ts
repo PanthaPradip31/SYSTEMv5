@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import useSWR, { mutate } from 'swr'
-import type { Tournament, Team, Match, TeamStanding, KillFeedEvent, OverlayConfig, Player, MatchResult, IntroConfig } from './types'
+import type { Tournament, Team, Match, TeamStanding, KillFeedEvent, OverlayConfig, Player, MatchResult, IntroConfig, Sponsor } from './types'
 import { DEFAULT_POINT_SYSTEM } from './types'
 import { getRealtimeSync } from './realtime'
 import { supabase } from './supabase'
@@ -22,6 +22,19 @@ const SWR_CONFIG = {
   revalidateOnReconnect: false,
   refreshInterval: 0,
   dedupingInterval: 5000,
+}
+
+const SUPABASE_ENABLED = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+)
+
+const getSupabaseErrorMessage = (error: unknown) => {
+  if (typeof error === 'object' && error !== null) {
+    const err = error as { message?: string; code?: string }
+    return `${err.message ?? 'Supabase error'}${err.code ? ` (${err.code})` : ''}`
+  }
+  return String(error)
 }
 
 // Helper to safely access localStorage
@@ -130,6 +143,10 @@ const tournamentFetcher = async (): Promise<Tournament> => {
 }
 
 const teamsFetcher = async (): Promise<Team[]> => {
+  if (!SUPABASE_ENABLED) {
+    return getFromStorage<Team[]>(STORAGE_KEYS.TEAMS, [])
+  }
+
   try {
     const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
@@ -171,7 +188,9 @@ const teamsFetcher = async (): Promise<Team[]> => {
       return resolvedTeams
     }
   } catch (e) {
-    console.warn("Supabase teams fetch failed, using local storage:", e)
+    console.warn(
+      `Supabase teams fetch failed, using local storage: ${getSupabaseErrorMessage(e)}`
+    )
   }
   return getFromStorage<Team[]>(STORAGE_KEYS.TEAMS, [])
 }
@@ -1091,20 +1110,40 @@ export function useStandings() {
   
   // Dynamically join standings with latest team data so it is always fresh and lightweight in storage
   const joinedStandings = useMemo(() => {
-    return (data || []).map(standing => {
-      const foundTeam = teams.find(t => t.id === standing.teamId)
-      return {
+    const standingsByTeamId = new Map((data || []).map(standing => [standing.teamId, standing]))
+    const allRegisteredStandings = teams.map(team => {
+      const standing = standingsByTeamId.get(team.id)
+      return standing
+        ? { ...standing, team }
+        : {
+            teamId: team.id,
+            team,
+            rank: 0,
+            totalPoints: 0,
+            totalKills: 0,
+            placementPoints: 0,
+            killPoints: 0,
+            wwcd: 0,
+            matches: [],
+          }
+    })
+
+    const teamsById = new Map(teams.map((team) => [team.id, team]))
+    const extras = (data || [])
+      .filter(standing => !teamsById.has(standing.teamId))
+      .map(standing => ({
         ...standing,
-        team: foundTeam || standing.team || {
+        team: standing.team || {
           id: standing.teamId,
-          name: "Loading Team...",
+          name: "Unknown Team",
           shortName: "UNK",
           logo: "/placeholder.svg",
           color: "#7F8C8D",
-          players: []
-        }
-      }
-    })
+          players: [],
+        },
+      }))
+
+    return [...allRegisteredStandings, ...extras]
   }, [data, teams])
   
   return { standings: joinedStandings, error, isLoading, updateStandings, addMatchResult }
@@ -1147,11 +1186,41 @@ export function useOverlayConfig() {
 
 // Utility to calculate standings from teams and match results
 export function calculateStandings(teams: Team[], standings: TeamStanding[]): TeamStanding[] {
-  return standings
+  const teamById = new Map(teams.map(team => [team.id, team]))
+  const standingsById = new Map(standings.map(standing => [standing.teamId, standing]))
+
+  const mergedStandings: TeamStanding[] = teams.map(team => {
+    const existing = standingsById.get(team.id)
+    return existing
+      ? { ...existing, team }
+      : {
+          teamId: team.id,
+          team,
+          rank: 0,
+          totalPoints: 0,
+          totalKills: 0,
+          placementPoints: 0,
+          killPoints: 0,
+          wwcd: 0,
+          matches: [],
+        }
+  })
+
+  const extraStandings = standings
+    .filter(standing => !teamById.has(standing.teamId))
     .map(standing => ({
       ...standing,
-      team: teams.find(t => t.id === standing.teamId) || standing.team,
+      team: standing.team || {
+        id: standing.teamId,
+        name: "Unknown Team",
+        shortName: "UNK",
+        logo: "/placeholder.svg",
+        color: "#7F8C8D",
+        players: [],
+      },
     }))
+
+  return [...mergedStandings, ...extraStandings]
     .sort((a, b) => {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
       if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills
