@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,6 @@ import { PlayIcon } from "@/components/icons"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
-type TurnstileState = "idle" | "verifying" | "verified" | "expired" | "error"
 type LoginRole = "admin" | "observer" | "user"
 
 export default function AdminLogin() {
@@ -20,10 +19,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [selectedRole, setSelectedRole] = useState<LoginRole>("admin")
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
-  const [verificationState, setVerificationState] = useState<TurnstileState>("idle")
   
-  const turnstileRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -31,71 +27,10 @@ export default function AdminLogin() {
     setAuthError(null)
   }, [selectedRole])
 
-  // Native Cloudflare Turnstile explicit mount with real-time feedback listeners
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    if (selectedRole !== "admin") return // Turnstile only needed for secure Admin writes
-
-    // Inject Cloudflare Turnstile API Script if not already loaded
-    if (!document.getElementById("cloudflare-turnstile-script")) {
-      const script = document.createElement("script")
-      script.id = "cloudflare-turnstile-script"
-      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-      script.async = true
-      script.defer = true
-      document.body.appendChild(script)
-    }
-
-    const interval = setInterval(() => {
-      if ((window as any).turnstile) {
-        clearInterval(interval)
-        if (turnstileRef.current) {
-          try {
-            setVerificationState("verifying")
-            // Render Turnstile explicitly to allow customized dark themes matching esports UI
-            ;(window as any).turnstile.render(turnstileRef.current, {
-              sitekey: "1x00000000000000000000AA", // Official Cloudflare Testing Sitekey (Always Passes for staging)
-              callback: (token: string) => {
-                setTurnstileToken(token)
-                setVerificationState("verified")
-                toast.success("Security clearance granted. Human verified!")
-              },
-              "expired-callback": () => {
-                setTurnstileToken(null)
-                setVerificationState("expired")
-                toast.warning("Verification session expired. Please verify again.")
-              },
-              "error-callback": () => {
-                setTurnstileToken(null)
-                setVerificationState("error")
-                toast.error("Verification failed. Please retry.")
-              },
-              theme: "dark",
-            })
-          } catch (e) {
-            console.error("Turnstile explicit render error:", e)
-            setVerificationState("error")
-          }
-        }
-      }
-    }, 500)
-
-    return () => {
-      clearInterval(interval)
-    }
-  }, [selectedRole])
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setAuthError(null)
-
-    // Secure Gate: Verify human token exists before calling credentials api in Admin mode
-    if (selectedRole === "admin" && (!turnstileToken || verificationState !== "verified")) {
-      toast.error("Security alert: Please verify you are human first!")
-      setLoading(false)
-      return
-    }
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -110,6 +45,7 @@ export default function AdminLogin() {
           : normalized
 
         setAuthError(message)
+        setPassword("")
         toast.error(message)
       } else if (data.session) {
         // ── Role-lock: persist role BEFORE redirect so dashboard reads it instantly ──
@@ -300,7 +236,7 @@ export default function AdminLogin() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Private Token</Label>
+                <Label htmlFor="password" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -313,46 +249,6 @@ export default function AdminLogin() {
                 {authError && (
                   <p className="text-xs text-destructive mt-1">{authError}</p>
                 )}
-              </div>
-
-              {/* Cloudflare Turnstile Human-Verification Widget with Real-time Status */}
-              <div className="space-y-2 flex flex-col items-center justify-center pt-1 w-full">
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-black/40 text-[9px] uppercase font-black tracking-widest transition-all duration-500 shadow-inner">
-                  {verificationState === "idle" && (
-                    <span className="flex items-center gap-1.5 text-gold-dim animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
-                      Robot Guard: Awaiting Check
-                    </span>
-                  )}
-                  {verificationState === "verifying" && (
-                    <span className="flex items-center gap-1.5 text-gold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gold animate-spin border-t-transparent" style={{ borderWidth: "1.5px" }} />
-                      Robot Guard: Loading Turnstile...
-                    </span>
-                  )}
-                  {verificationState === "verified" && (
-                    <span className="flex items-center gap-1.5 text-alive shadow-[0_0_10px_rgba(34,197,94,0.2)] border-alive/30 bg-alive/5 px-2 py-0.5 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-alive animate-pulse" />
-                      Clearance: Human Verified
-                    </span>
-                  )}
-                  {verificationState === "expired" && (
-                    <span className="flex items-center gap-1.5 text-knocked animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-knocked" />
-                      Clearance: Session Expired
-                    </span>
-                  )}
-                  {verificationState === "error" && (
-                    <span className="flex items-center gap-1.5 text-destructive animate-bounce">
-                      <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                      Blocked: Verification Expired
-                    </span>
-                  )}
-                </div>
-                <div 
-                  ref={turnstileRef} 
-                  className="shadow-[0_0_15px_rgba(218,165,32,0.05)] border border-white/5 rounded-lg overflow-hidden transition-all duration-300 hover:border-gold/20" 
-                />
               </div>
             </CardContent>
             
@@ -411,7 +307,7 @@ export default function AdminLogin() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Passphrase</Label>
+                <Label htmlFor="password" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Password</Label>
                 <Input
                   id="password"
                   type="password"

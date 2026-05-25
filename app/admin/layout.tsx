@@ -28,14 +28,23 @@ export default function AdminLayout({
     async function checkSession() {
       try {
         const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        
+        const { data, error } = await supabase.auth.getSession()
+        const session = data?.session
+
+        if (error) {
+          console.error("Supabase auth session error:", error)
+          await supabase.auth.signOut()
+          router.replace("/admin/login")
+          return
+        }
+
         if (!session) {
           router.replace("/admin/login")
         } else {
           setAuthorized(true)
         }
       } catch (error) {
+        console.error("Supabase session check failed:", error)
         router.replace("/admin/login")
       } finally {
         setLoading(false)

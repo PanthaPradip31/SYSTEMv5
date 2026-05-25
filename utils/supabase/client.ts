@@ -39,5 +39,17 @@ export const createClient = () => {
     return createFallbackClient();
   }
 
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  if (typeof window === "undefined") {
+    return createBrowserClient(supabaseUrl, supabaseKey);
+  }
+
+  const globalWindow = window as unknown as Record<string, unknown> & {
+    __PUBG_SUPABASE_CLIENT__?: ReturnType<typeof createBrowserClient>
+  };
+
+  if (!globalWindow.__PUBG_SUPABASE_CLIENT__) {
+    globalWindow.__PUBG_SUPABASE_CLIENT__ = createBrowserClient(supabaseUrl, supabaseKey);
+  }
+
+  return globalWindow.__PUBG_SUPABASE_CLIENT__;
 };

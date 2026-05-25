@@ -251,6 +251,8 @@ Deploy your live production system to the web using Vercel so your crew can mana
    ```
 2. Push it to a new private GitHub repository.
 
+> If you are running this project locally on Windows, keep the workspace on a local disk rather than on a network share or mounted folder. Next.js can detect a slow filesystem and show warnings when `.next/dev` is not on local storage.
+
 ### 2. Deploy to Vercel
 
 1. Open the [Netlify Dashboard](https://app.netlify.com) and go to your site settings, or open the [Vercel Dashboard](https://vercel.com) if you prefer.

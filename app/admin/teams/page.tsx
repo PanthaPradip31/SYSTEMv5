@@ -172,19 +172,27 @@ export default function TeamsPage() {
     await removeTeamsBulk(extraTeams.map(t => t.id))
   }
 
+  const handleClearAllTeams = async () => {
+    if (!window.confirm("Clear all teams and rosters? This will remove every deployed team permanently.")) {
+      return
+    }
+    setErrorMsg(null)
+    await removeTeamsBulk(teams.map((t) => t.id))
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/30 pb-5">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight bg-linear-to-r from-white via-neutral-200 to-neutral-500 bg-clip-text text-transparent">
-            TACTICAL ROSTER MANAGEMENT
+            TEAM ROSTER MANAGEMENT
           </h1>
           <p className="text-sm text-muted-foreground/80 mt-1">
             Register and deploy competitive esports teams in the live tournament engine.
           </p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-2 shrink-0 flex-wrap">
           {teams.length > MAX_TEAMS && (
             <Button 
               onClick={handlePruneLobby} 
@@ -192,6 +200,15 @@ export default function TeamsPage() {
               className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider text-xs px-4 py-2 rounded-xl transition-all duration-300 shadow-lg shadow-red-500/20"
             >
               🧹 Prune Lobby to 25
+            </Button>
+          )}
+          {teams.length > 0 && (
+            <Button
+              onClick={handleClearAllTeams}
+              variant="destructive"
+              className="bg-red-700 hover:bg-red-800 text-white font-bold uppercase tracking-wider text-xs px-4 py-2 rounded-xl transition-all duration-300 shadow-lg shadow-red-500/20"
+            >
+              🗑️ Clear All Teams & Rosters
             </Button>
           )}
           <Button 
@@ -365,7 +382,7 @@ export default function TeamsPage() {
             {/* Right Tactical Squad Forming */}
             <div className="lg:col-span-7 space-y-4">
               <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
-                TACTICAL ROSTER BATTLE FORMATION (4 ACTIVE + 2 SUBS)
+                TEAM ROSTER BATTLE FORMATION (4 ACTIVE + 2 SUBS)
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -807,7 +824,7 @@ function TeamCard({
             className="w-full h-8 mt-3 border-white/10 hover:border-gold/50 hover:bg-gold/10 hover:text-gold transition-colors font-bold uppercase tracking-wider text-[10px]" 
             onClick={startEditingPlayers}
           >
-            ✏️ Manage Tactical Roster
+            ✏️ Manage Team Roster
           </Button>
         )}
       </CardContent>

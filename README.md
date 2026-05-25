@@ -407,6 +407,8 @@ If your site is deployed on Netlify, install or update the Next.js plugin in the
 - plugin: `@netlify/plugin-nextjs`
 - desired version: `5.15.11` or later
 
+> If you are developing on Windows, keep the repo on a local drive (for example, `C:\Projects`) rather than a network share or mounted drive. Next.js can warn about a slow filesystem when `.next/dev` is on a network volume.
+
 You can also use the committed `.env.example` file as a reference for the required keys.
 
 ---
