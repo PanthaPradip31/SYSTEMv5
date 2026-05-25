@@ -1,5 +1,7 @@
 # PUBG Live Production System
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/e9b1b8bb-07e4-41a7-ae8d-285e2b692006/deploy-status)](https://app.netlify.com/projects/pubgsystemproduction/deploys)
+
 A real-time, automated live production system for PUBG Mobile tournaments that updates overlays dynamically. Built for grassroots tournament organizers who need professional-quality broadcasts without expensive software.
 
 ---
@@ -374,15 +376,40 @@ location.reload()
 2. Update overlay URLs in OBS to production domain
 3. Share admin URL with production crew
 
+### Production Branch Policy
+
+- Only changes merged into your designated production branch may deploy to production.
+- Use deploy previews and branch deploys for all feature work, staging, and QA.
+- Do not use Netlify CLI, MCP, or API to publish production from non-production branches.
+- If your production branch is not named `production`, update `PRODUCTION_DEPLOY_BRANCH` in `.github/workflows/production-deploy-policy.yml`.
+- See `docs/deployment-policy.md` for the process and branch policy.
+
 ### Environment Variables
 
-No environment variables required for basic functionality.
+This project uses Supabase for database-backed features and requires the following environment variables for deployment.
 
-For future database integration:
-\`\`\`env
-DATABASE_URL=your_database_url
-NEXT_PUBLIC_WS_URL=your_websocket_server
-\`\`\`
+Create a local `.env.local` file with:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+```
+
+For production, add the same keys to your host provider's environment settings (for example, Netlify site variables or GitHub repository secrets). Do not commit `.env.local` or real values to the repo.
+
+If you are using Google OAuth with Supabase, also configure your redirect URL in the Supabase Dashboard:
+
+- `https://<your-production-domain>/admin`
+
+This must match the domain used by your deployed app.
+
+If your site is deployed on Netlify, install or update the Next.js plugin in the Netlify dashboard to the latest version:
+
+- plugin: `@netlify/plugin-nextjs`
+- desired version: `5.15.11` or later
+
+> If you are developing on Windows, keep the repo on a local drive (for example, `C:\Projects`) rather than a network share or mounted drive. Next.js can warn about a slow filesystem when `.next/dev` is on a network volume.
+
+You can also use the committed `.env.example` file as a reference for the required keys.
 
 ---
 

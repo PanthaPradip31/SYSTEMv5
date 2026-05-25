@@ -14,7 +14,6 @@ Welcome to the **PUBG Mobile Live Production System**! This guidebook walks you 
 6. [Step 5: OBS Studio Broadcast Configurations](#step-5-obs-studio-broadcast-configurations)
 7. [Step 6: Remote Caster Synchronization Blueprint](#step-6-remote-caster-synchronization-blueprint)
 8. [Step 7: Live Cloud Deployment (Vercel)](#step-7-live-cloud-deployment-vercel)
-9. [Deployment & Production Security Guide](#deployment--production-security-guide)
 
 ---
 
@@ -25,131 +24,6 @@ This application consists of two core spaces:
 1. **Secure Admin & Director Panels (`/admin`)**: Protected behind a client-side JWT route guard. Used to configure rosters, trigger stinger effects, register kills/knocks, upload commentator socials, and override database vitals.
 2. **Broadcast Overlays (`/overlay`)**: Full-screen and HUD widgets (starting soon, overall standings, live rankings, kill feeds, WWCD banners) loaded into OBS Studio as browser sources.
 
-## Deployment & Production Security Guide
-### Purpose
--------
-This guide explains how to deploy the `pubg-live-production` Next.js app, configure Supabase, run the DB migrations included in `supabase_schema.sql`, and apply recommended production security hardening so the admin panel and overlays remain secure.
-
-### Quick checklist
----------------
-- Create a Supabase project and enable Google OAuth (if using Google sign-in).
-- Run the SQL in `supabase_schema.sql` to create tables and policies.
-- Replace the seeded admin email in `public.admins` with your real admin email.
-- Set environment variables in your host (Vercel / server) — do not commit them.
-- Install dependencies and build the Next.js app.
-- Deploy to Vercel (recommended) or another host that supports Next.js 16.
-
-### Prerequisites
--------------
-- Node.js 18+ (match your Next.js runtime requirement)
-- pnpm / npm (pnpm recommended if you use pnpm-lock)
-- A Supabase project with a database
-- (Optional) A Vercel account for easy Next.js deployment
-
-### Environment variables
----------------------
-Set these in your deployment provider's secure environment variable settings (Vercel dashboard, etc.). Do NOT commit them to git.
-
-- `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — Supabase anon/public key (client-side)
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-only; keep secret)
-- `NEXT_PUBLIC_VERCEL_ENV` (optional) — environment name if you use it for conditional behavior
-
-### Local .env example (for development only)
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=public-anon-key
-SUPABASE_SERVICE_ROLE_KEY=service-role-secret
-```
-
-### Database setup (Supabase)
--------------------------
-1. Open your Supabase project and go to the SQL Editor.
-2. Copy the contents of `supabase_schema.sql` and run it. This creates the tables (`admins`, `events`, etc.), RLS policies and a placeholder admin seed.
-3. Replace the placeholder admin email with your real admin email. Example SQL (run in Supabase SQL editor):
-
-```sql
--- Replace placeholder admin@example.com with your admin account
-update public.admins set email = 'your.admin@domain.com' where email = 'admin@example.com';
-
--- Or insert directly:
-insert into public.admins (email) values ('your.admin@domain.com') on conflict do nothing;
-```
-
-4. Verify RLS & policies in Supabase -> Database -> Policies. The default SQL in `supabase_schema.sql` restricts sensitive writes to authenticated JWTs whose `email` is present in `public.admins`.
-
-### Auth / Google OAuth
--------------------
-- Configure Google provider in Supabase Authentication > Providers. Set the Authorized redirect URLs to your deployment URLs (e.g., `https://your-site.vercel.app/api/auth/callback`).
-- The admin sign-in flow uses Supabase auth. After a user signs in via Google, the server-side API (`/api/admin/check`) validates that the user email exists in `public.admins` and denies access otherwise.
-
-### Local dev & testing
--------------------
-Install dependencies and run locally:
-
-```bash
-pnpm install
-pnpm dev
-```
-
-Open `http://localhost:3000` to test.
-
-### Build & deploy (Vercel recommended)
----------------------------------
-1. Push your repo to Git (GitHub, GitLab, etc.).
-2. Create a Vercel project and import the repository.
-3. In Vercel Project Settings -> Environment Variables, add the environment variables listed above (set service role key only for Production and mark as secret). Use `Preview` values for preview deployments and `Production` for main branch.
-4. Vercel will auto-build using `pnpm build` (or `npm run build`) and deploy your app.
-
-### If you prefer a manual host (Docker / VPS)
-----------------------------------------
-- Build the Next.js app and serve it behind a reverse proxy (NGINX) with TLS.
-- Example build commands:
-
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-pnpm start
-```
-
-### Security hardening (production recommendations)
------------------------------------------------
-Follow these to minimize attack surface and secure admin access and data:
-
-- Secrets: keep `SUPABASE_SERVICE_ROLE_KEY` and any other server secrets only in the host's secret storage. Never expose them to the browser.
-- RLS & Policies: verify the RLS policies created by `supabase_schema.sql`. Ensure only admin emails in `public.admins` can perform writes to sensitive tables (`events`, `kill_feed`, `overlay_config`).
-- Admin enforcement: we added a server-side API at `/api/admin/check` and client guard in `app/admin/layout.tsx`. Ensure this API uses the server Supabase client and server cookies (it does via `utils/supabase/server`).
-- Limit admin accounts: keep `public.admins` small (1 recommended). Rotate admin email or credentials when the role changes.
-- Google OAuth: restrict authorized redirect URIs to only your deployment domains.
-- Cookies: use secure cookies with `SameSite=Lax` or `Strict` and `Secure=true` in production. Next.js and Supabase client configuration should be run under HTTPS.
-- Content Security Policy (CSP): configure CSP headers in `next.config.mjs` or via middleware to limit allowed script and media sources.
-- X-Frame-Options: add header `X-Frame-Options: DENY` to prevent clickjacking on admin pages. For overlays embedded in OBS you may need `allow-from` limited to local IPs.
-- HSTS: enable `Strict-Transport-Security` header for HTTPS hosts.
-- Audit logs & monitoring: enable Supabase audit logs, and add application error monitoring (Sentry, Vercel analytics).
-- Backup & restore: enable periodic DB backups in Supabase and keep export snapshots. Test restore process occasionally.
-- Network access: restrict database access to Supabase only; if running external DB, use private networking and firewall rules.
-- Least privilege: do not use service-role keys in the browser; restrict server endpoints to verify admin JWT before performing admin actions.
-- Rate limiting & abuse protection: implement basic rate limiting for admin APIs and public endpoints; add CAPTCHA on any public forms if needed.
-
-### Observability & post-deploy checks
----------------------------------
-- Verify that the admin login flow rejects non-admin emails.
-- Test overlay pages in a browser tab and in OBS for correct rendering and CORS behavior.
-- Confirm Realtime flows: admin actions broadcast via the local BroadcastChannel (`lib/realtime.ts`) or via Supabase realtime if you wire that later.
-
-### Maintenance & ops
------------------
-- Rotate keys at least quarterly or on suspicion of compromise.
-- Keep dependencies updated (`pnpm update`, monitor dependabot alerts).
-- Periodically review Supabase RLS policies and application access patterns.
-
-If you want, I can:
-- Replace the placeholder seed admin email in `supabase_schema.sql` with your admin email now.
-- Add environment variable templates or a small `deploy.sh` for Docker-based deployments.
-
-### Contact / Next steps
---------------------
-Tell me whether you want me to update the seed admin email now (provide the email), and whether you'd like a `Dockerfile` + `deploy.sh` for VPS deployment.
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                              NEXT.JS APP                               │
@@ -217,8 +91,10 @@ To create your single admin user:
 
 Create a file named `.env.local` in the project root and add your Supabase credentials:
 
-NEXT_PUBLIC_SUPABASE_URL=https://cbfcmvnvvqmlgsqnvmam.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_vqN_LY0yAQ-CJPoslGXFug_3hFIMShn
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+
+> NOTE: Do not commit `.env.local` to source control. This repository already ignores `.env*`.
 
 
 ### 2. Install and Run Local Server
@@ -375,14 +251,23 @@ Deploy your live production system to the web using Vercel so your crew can mana
    ```
 2. Push it to a new private GitHub repository.
 
+> If you are running this project locally on Windows, keep the workspace on a local disk rather than on a network share or mounted folder. Next.js can detect a slow filesystem and show warnings when `.next/dev` is not on local storage.
+
 ### 2. Deploy to Vercel
 
-1. Open the [Vercel Dashboard](https://vercel.com) and click **"Add New" > "Project"**.
+1. Open the [Netlify Dashboard](https://app.netlify.com) and go to your site settings, or open the [Vercel Dashboard](https://vercel.com) if you prefer.
 2. Import your GitHub repository.
-3. In **Environment Variables**, add the Supabase credentials from your `.env.local` file:
+3. Configure your production branch in the host provider so only that branch deploys to production.
+4. In **Environment Variables** / **Site variables**, add the Supabase credentials from your `.env.local` file:
    * `NEXT_PUBLIC_SUPABASE_URL`
    * `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-4. Click **Deploy**. Vercel will build and host your esports graphics portal in seconds!
+5. If you host on Netlify, add the same keys under **Site settings → Build & deploy → Environment**.
+5. If using Google OAuth, add the production callback URL in Supabase:
+   * `https://<your-production-domain>/admin`
+6. Click **Deploy**. Your site will build with Supabase enabled.
+
+> Production deploys must come from the designated production branch only. Use deploy previews or branch deploys for feature work and non-production testing.
+
 
 ---
 
