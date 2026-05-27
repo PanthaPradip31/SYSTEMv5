@@ -85,6 +85,15 @@ create table if not exists public.sponsors (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 7.5. Admins Table (Director-level access control)
+create table if not exists public.admins (
+  id text primary key,
+  email text unique not null,
+  name text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- 8. Enable Row Level Security (RLS) across all tables
 alter table public.tournament enable row level security;
 alter table public.teams enable row level security;
@@ -93,6 +102,7 @@ alter table public.standings enable row level security;
 alter table public.kill_feed enable row level security;
 alter table public.overlay_config enable row level security;
 alter table public.sponsors enable row level security;
+alter table public.admins enable row level security;
 
 -- 9. Grant schema and table privileges to Supabase client roles
 -- This avoids Postgres schema-level access errors like "permission denied for schema public"
@@ -127,6 +137,9 @@ create policy "Public write overlay_config" on public.overlay_config for all usi
 create policy "Public read sponsors" on public.sponsors for select using (true);
 create policy "Public write sponsors" on public.sponsors for all using (true) with check (true);
 
+create policy "Public read admins" on public.admins for select using (true);
+create policy "Public write admins" on public.admins for all using (true) with check (true);
+
 -- 10. Add all tables to the supabase_realtime publication
 alter publication supabase_realtime add table public.tournament;
 alter publication supabase_realtime add table public.teams;
@@ -135,6 +148,7 @@ alter publication supabase_realtime add table public.standings;
 alter publication supabase_realtime add table public.kill_feed;
 alter publication supabase_realtime add table public.overlay_config;
 alter publication supabase_realtime add table public.sponsors;
+alter publication supabase_realtime add table public.admins;
 
 -- 11. Strict Single-Admin Security Guard Constraint
 -- Prevents any unauthorized third-party registrations or database growth by restricting auth.users to exactly 1.

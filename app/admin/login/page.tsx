@@ -22,9 +22,26 @@ export default function AdminLogin() {
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+  const isInvalidRefreshTokenError = (error: any) => {
+    return (
+      error?.message?.includes("Refresh Token Not Found") ||
+      error?.message?.includes("Invalid Refresh Token")
+    )
+  }
+
   const waitForAuthSession = async (supabase: ReturnType<typeof getClient>) => {
     for (let i = 0; i < 8; i += 1) {
-      const { data: sessionData } = await supabase.auth.getSession()
+      const { data: sessionData, error } = await supabase.auth.getSession()
+      if (error) {
+        if (isInvalidRefreshTokenError(error)) {
+          await supabase.auth.signOut()
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("pubg_admin_role")
+          }
+          return null
+        }
+      }
+
       const session = sessionData?.session ?? null
       if (session) return session
       await sleep(250)
@@ -114,7 +131,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#050508] p-4 relative overflow-hidden select-none">
+    <div className="min-h-screen flex items-center justify-center bg-[#282840] p-4 relative overflow-hidden select-none">
       
       {/* 1. Cinematic PUBG Mobile Background Image with slow zoom */}
       <div 
